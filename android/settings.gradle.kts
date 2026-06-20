@@ -24,3 +24,10 @@ plugins {
 }
 
 include(":app")
+
+plugins.withType<com.android.build.gradle.api.AndroidBasePlugin> {
+    val androidConfiguration = extensions.findByName("android") as? com.android.build.gradle.BaseExtension
+    androidConfiguration?.apply {
+        compileSdkVersion(34)
+    }
+}

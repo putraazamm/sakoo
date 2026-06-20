@@ -1,5 +1,5 @@
 name: sakoo
-description: "A new Flutter project."
+description: "Allowance Management App."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -31,9 +31,36 @@ dependencies:
   flutter:
     sdk: flutter
 
+
+  # State Management
+  flutter_bloc: ^8.1.6
+
+  # Firebase (Flat Collection Support)
+  firebase_core: ^3.1.1
+  cloud_firestore: ^5.0.1
+  firebase_auth: ^5.1.1
+
+  # Utilities 
+  flutter_nfc_kit: ^3.6.2
+  flutter_svg: ^2.0.10+1
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  get: ^4.7.3
+  supabase_flutter: ^2.14.2
+  intl: ^0.20.2
+
+  lottie: ^3.3.3
+  flutter_native_splash: ^2.4.8
+
+
+flutter_native_splash: 
+  color: "#ffffff"
+  image: lib/assets/images/app-icon/android/res/mipmap-xxxhdpi/sakoo-app-logo.png
+
+  android_12:
+    image: lib/assets/images/app-icon/android/play_store_512.png
+    color: "#ffffff"
 
 dev_dependencies:
   flutter_test:
@@ -58,9 +85,15 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - lib/assets/images/sakoo-logo-welcome-screen.svg
+    - lib/assets/images/sakoo-merchant-logo.svg
+    - lib/assets/images/card.svg
+    - lib/assets/images/nfc-scan.json
+
+    # app icon assets
+    - lib/assets/images/app-icon/
+
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -73,7 +106,21 @@ flutter:
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
   # example:
-  # fonts:
+  fonts:
+      - family: SF Pro Rounded
+        fonts: 
+        - asset: lib/assets/fonts/SF-Pro-Rounded-Ultralight.otf
+        - asset: lib/assets/fonts/SF-Pro-Rounded-Light.otf
+          weight: 200
+        - asset: lib/assets/fonts/SF-Pro-Rounded-Thin.otf
+          weight: 300
+        - asset: lib/assets/fonts/SF-Pro-Rounded-Regular.otf
+        - asset: lib/assets/fonts/SF-Pro-Rounded-Medium.otf
+          weight: 500
+        - asset: lib/assets/fonts/SF-Pro-Rounded-Semibold.otf
+          weight: 600
+        - asset: lib/assets/fonts/SF-Pro-Rounded-Bold.otf
+          weight: 700
   #   - family: Schyler
   #     fonts:
   #       - asset: fonts/Schyler-Regular.ttf
