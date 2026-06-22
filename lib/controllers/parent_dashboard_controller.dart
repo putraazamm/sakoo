@@ -23,7 +23,7 @@ class ParentDashboardController extends GetxController {
   var childrenList = <ChildModel>[].obs;
   var recentActivities = <TransactionModel>[].obs;
 
-  // --- 1. CONTROLLER UNTUK FORM INPUT ANAK BARU ---
+  // input controller for registering new child
   final nameController = TextEditingController();
   final nicknameController = TextEditingController();
   final dobController = TextEditingController();
@@ -31,6 +31,9 @@ class ParentDashboardController extends GetxController {
   final address1Controller = TextEditingController();
   final address2Controller = TextEditingController();
   final schoolController = TextEditingController();
+
+  var allTransactions = <TransactionModel>[].obs;
+  var isLoadingAll = false.obs;
 
   @override
   void onInit() {
@@ -122,7 +125,7 @@ class ParentDashboardController extends GetxController {
           .select('*, child(childName)')
           .eq('parentId', parentId)
           .order('createdAt', ascending: false)
-          .limit(10);
+          .limit(5); // limit the list to 5
       recentActivities.assignAll(
         transactionData.map((e) => TransactionModel.fromJson(e)).toList(),
       );
@@ -142,19 +145,49 @@ class ParentDashboardController extends GetxController {
     }
   }
 
-  // --- DAFTAR ANAK (Menggunakan Text Controllers) ---
+  // -- view all transactions (method) --
+  Future<void> fetchAllTransactions() async {
+    try {
+      isLoadingAll.value = true;
+
+      final parentId = parentData['id'];
+      if (parentId == null) return;
+
+      final List<dynamic> data = await _supabase
+          .from('transaction')
+          .select('*, child(childName)')
+          .eq('parentId', parentId)
+          .order('createdAt', ascending: false);
+      // no limit - fetch everything
+
+      allTransactions.assignAll(
+        data.map((e) => TransactionModel.fromJson(e)).toList(),
+      );
+    } catch (e) {
+      debugPrint('fetchAllTransaction error: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to load transaction.',
+        snackPosition: SnackPosition.TOP,
+      );
+    } finally {
+      isLoadingAll.value = false;
+    }
+  }
+
+  // -- add new child ---
   Future<void> addNewChild() async {
     final parentId = parentData['id'];
     if (parentId == null) {
-      Get.snackbar("Ralat", "Sesi tidak sah. Sila log masuk semula.");
+      Get.snackbar("Error", "Invalid Session. Please log in again.");
       return;
     }
 
     if (nameController.text.trim().isEmpty ||
         nicknameController.text.trim().isEmpty) {
       Get.snackbar(
-        "Sila Isi",
-        "Nama penuh dan nama panggilan anak wajib diisi.",
+        "Please fill in the child's name.",
+        "Please fill in fullname and nickname of the child.",
       );
       return;
     }
@@ -198,8 +231,8 @@ class ParentDashboardController extends GetxController {
       );
     } catch (e) {
       Get.snackbar(
-        "Ralat",
-        "Gagal mendaftar anak: $e",
+        "Error",
+        "Failed to register child: $e",
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {
