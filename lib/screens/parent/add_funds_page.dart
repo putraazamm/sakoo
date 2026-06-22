@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/parent_dashboard_controller.dart';
-import '../widgets/custom_floating_nav_bar.dart';
 import '../parent/parent_dashboard_page.dart';
 
 class AddFundsPage extends StatefulWidget {
@@ -241,15 +240,6 @@ class _AddFundsPageState extends State<AddFundsPage> {
                   ),
                 ],
               ),
-            ),
-
-            // Floating Island / Custom Bottom Navigation Bar
-            // 👇 Akan sentiasa kekal di bawah sebab resizeToAvoidBottomInset = false
-            const Positioned(
-              bottom: 5,
-              left: 30,
-              right: 30,
-              child: CustomFloatingNavBar(),
             ),
           ],
         ),

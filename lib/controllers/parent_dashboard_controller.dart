@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:sakoo/screens/welcome_screen.dart';
+import 'package:sakoo/services/session_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/child_model.dart';
 import '../models/transaction_model.dart';
@@ -34,22 +36,57 @@ class ParentDashboardController extends GetxController {
   void onInit() {
     super.onInit();
 
-    if (Get.arguments != null) {
-      parentData.value = Get.arguments as Map<String, dynamic>;
-      parentName.value = parentData['name'] ?? 'Parent';
-      parentBalance.value = (parentData['balance'] ?? 0.0).toDouble();
+    // if (Get.arguments != null) {
+    //   parentData.value = Get.arguments as Map<String, dynamic>;
 
-      print("=== Data Parent Dikutip Dari Arguments ===");
-      print("Nama: ${parentName.value}");
-      print("Baki: ${parentBalance.value}");
-    }
-
-    fetchDashboardData();
+    //   print("=== Data Parent Dikutip Dari Arguments ===");
+    //   print("Nama: ${parentName.value}");
+    //   print("Baki: ${parentBalance.value}");
+    // }
+    _initSession();
   }
 
+  Future<void> _initSession() async {
+    if (Get.arguments != null && Get.arguments is Map) {
+      parentData.value = Map<String, dynamic>.from(Get.arguments);
+    } else {
+      // cold boot - no arguments, load from disk
+      final saved = await SessionService.loadSession();
+      if (saved != null) {
+        parentData.value = Map<String, dynamic>.from(saved);
+      }
+    }
+
+    if (parentData['id'] == null) {
+      await SessionService.clearSession();
+      Get.offAll(() => const WelcomeScreen());
+      return;
+    }
+
+    parentName.value = parentData['name'] ?? 'Parent';
+    parentBalance.value = (parentData['balance'] ?? 0.0).toDouble();
+    await fetchDashboardData();
+  }
+
+  // Future<void> _loadSessionIfNeeded() async {
+  //   if (parentData.isEmpty) {
+  //     final saved = await SessionService.loadSession();
+  //     if (saved != null) {
+  //       parentData.value = saved;
+  //     }
+  //   }
+  //   parentName.value = parentData['name'] ?? 'Parent';
+  //   parentBalance.value = (parentData['balance'] ?? 0.0).toDouble();
+  //   fetchDashboardData();
+  // }
+
   void logout() async {
+    await SessionService.clearSession();
     parentData.clear();
-    Get.offAllNamed('/login');
+    childrenList.clear();
+    recentActivities.clear();
+    await Future.delayed(const Duration(milliseconds: 100));
+    Get.offAll(() => const WelcomeScreen());
   }
 
   Future<void> fetchDashboardData() async {
@@ -57,8 +94,8 @@ class ParentDashboardController extends GetxController {
       isLoading.value = true;
 
       final parentId = parentData['id'];
-      if (parentId == null){
-        throw Exception("Sesi tamat. Sila log masuk semula.");
+      if (parentId == null) {
+        throw Exception("Session Invalid.");
       }
 
       final parentDbData = await _supabase
@@ -69,7 +106,6 @@ class ParentDashboardController extends GetxController {
 
       parentName.value = parentDbData['name'] ?? 'Parent';
       parentBalance.value = (parentDbData['balance'] ?? 0.0).toDouble();
-
       parentData['name'] = parentName.value;
       parentData['balance'] = parentBalance.value;
 
@@ -90,7 +126,12 @@ class ParentDashboardController extends GetxController {
       recentActivities.assignAll(
         transactionData.map((e) => TransactionModel.fromJson(e)).toList(),
       );
+
+      await SessionService.saveSession(
+        Map<String, dynamic>.from(parentData),
+      ); // keep session cache fresh after every fetch
     } catch (e) {
+      debugPrint('fetchDashboardData error: $e');
       Get.snackbar(
         "Database Error",
         e.toString(),
@@ -120,9 +161,12 @@ class ParentDashboardController extends GetxController {
 
     try {
       isLoading.value = true;
+      String generatedChildId =
+          'C-${DateTime.now().millisecondsSinceEpoch.toString().substring(3)}';
 
       // Hantar data input dari form terus ke Supabase table 'child'
       await _supabase.from('child').insert({
+        'childId': generatedChildId,
         'parentId': parentId,
         'childName': nameController.text.trim(),
         'childNickname': nicknameController.text.trim(),
@@ -139,13 +183,16 @@ class ParentDashboardController extends GetxController {
         'cardId': '',
       });
 
+      // Store nickname before disposing controllers
+      String childNickname = nicknameController.text;
+
       await fetchDashboardData();
       clearFormFields();
       Get.back();
 
       Get.snackbar(
         "Successful",
-        "${nicknameController.text} successfully registered!",
+        "$childNickname successfully registered!",
         backgroundColor: Colors.green.withOpacity(0.1),
         snackPosition: SnackPosition.TOP,
       );
@@ -170,16 +217,7 @@ class ParentDashboardController extends GetxController {
     final oldChild = childrenList[index];
 
     try {
-      childrenList[index] = ChildModel(
-        childId: oldChild.childId,
-        childName: oldChild.childName,
-        childNickname: oldChild.childNickname,
-        cardId: oldChild.cardId,
-        childBalance: oldChild.childBalance,
-        parentId: oldChild.parentId,
-        isActive: oldChild.isActive,
-        dailyLimit: newLimit,
-      );
+      childrenList[index] = oldChild.copyWith(dailyLimit: newLimit);
 
       await _supabase
           .from('child')
@@ -202,7 +240,7 @@ class ParentDashboardController extends GetxController {
     }
   }
 
-  // function: top up child account balance
+  // function: top up child account balance -> in future, put this part to child controller
   Future<void> topUpChildBalance(String childId, double amount) async {
     int index = childrenList.indexWhere(
       (element) => element.childId == childId,
@@ -245,6 +283,7 @@ class ParentDashboardController extends GetxController {
         'merchantName': 'Sakoo Card Top-Up',
         'category': 'Top-Up',
         'amount': amount,
+        'createdAt': DateTime.now().toUtc().toIso8601String(),
       });
 
       Get.snackbar(
@@ -257,7 +296,90 @@ class ParentDashboardController extends GetxController {
       parentBalance.value = oldParentBalance;
       parentData['balance'] = oldParentBalance;
       childrenList[index] = oldChild;
-      Get.snackbar("Error", "Failed to top up: $e", snackPosition: SnackPosition.TOP, backgroundColor: Colors.redAccent.withOpacity(0.1));
+      Get.snackbar(
+        "Error",
+        "Failed to top up: $e",
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.redAccent.withOpacity(0.1),
+      );
+    }
+  }
+
+  // withdraw balance from child card to parent's wallet
+  Future<void> withdrawChildBalance(String childId, double amount) async {
+    int index = childrenList.indexWhere(
+      (element) => element.childId == childId,
+    );
+    if (index == -1) return;
+
+    final oldChild = childrenList[index];
+    double oldParentBalance = parentBalance.value;
+
+    // check if the child balance has enough funds
+    if (oldChild.childBalance < amount) {
+      Get.snackbar(
+        "Insufficient Funds",
+        "${oldChild.childNickname} only has RM ${oldChild.childBalance.toStringAsFixed(2)} available.",
+        backgroundColor: Colors.redAccent.withOpacity(0.1),
+        snackPosition: SnackPosition.TOP,
+      );
+      return;
+    }
+
+    try {
+      final parentId = parentData['id'];
+      if (parentId == null) throw Exception("Session ends.");
+
+      // updates the UI first before data is uploaded to the DB
+      parentBalance.value += amount;
+      parentData['balance'] = parentBalance.value;
+
+      double newChildBalance = oldChild.childBalance - amount;
+
+      childrenList[index] = oldChild.copyWith(childBalance: newChildBalance);
+
+      // update child table
+      await _supabase
+          .from('child')
+          .update({'childBalance': newChildBalance})
+          .eq('childId', childId);
+
+      // update user table (parent)
+      await _supabase
+          .from('user')
+          .update({'balance': parentBalance.value})
+          .eq('id', parentId);
+
+      // insert transaction record
+      await _supabase.from('transaction').insert({
+        'parentId': parentId,
+        'childId': childId,
+        'merchantName': 'Sakoo Card Withdrawal from ${oldChild.childNickname}',
+        'category': 'Withdrawal',
+        'amount': amount,
+        'createdAt': DateTime.now().toUtc().toIso8601String(),
+      });
+
+      await fetchDashboardData();
+
+      Get.snackbar(
+        "Withdrawal Successful!",
+        "RM ${amount.toStringAsFixed(2)} has been withdrawn from ${oldChild.childNickname}.",
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.green.withOpacity(0.1),
+      );
+    } catch (e) {
+      // rollback if anything falls
+      parentBalance.value = oldParentBalance;
+      parentData['balance'] = oldParentBalance;
+      childrenList[index] = oldChild;
+
+      Get.snackbar(
+        "Error",
+        "Failed to withdraw funds: $e",
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.redAccent.withOpacity(0.1),
+      );
     }
   }
 
@@ -281,13 +403,13 @@ class ParentDashboardController extends GetxController {
           .update({'balance': newParentBalance})
           .eq('id', parentId);
 
-      // ⚠️ BETULKAN DI SINI: Tukar dari 'id' kepada 'parentId' semasa insert transaksi bank
       await _supabase.from('transaction').insert({
         'parentId': parentId,
         'childId': null,
         'merchantName': 'Bank Transfer (Add Funds)',
         'category': 'Top-Up',
         'amount': amount,
+        'createdAt': DateTime.now().toUtc().toIso8601String(),
       });
 
       parentBalance.value = newParentBalance;

@@ -52,15 +52,21 @@ dependencies:
 
   lottie: ^3.3.3
   flutter_native_splash: ^2.4.8
+  action_slider: ^0.7.0
+
+  google_nav_bar: ^5.0.7
+  flutter_launcher_icons: ^0.14.4
 
 
 flutter_native_splash: 
-  color: "#ffffff"
-  image: lib/assets/images/app-icon/android/res/mipmap-xxxhdpi/sakoo-app-logo.png
+  color: "#252525"
+  image: lib/assets/images/app-icon/android/play_store_512.png
+  branding: lib/assets/images/splash/sakoo_branding.png
 
   android_12:
-    image: lib/assets/images/app-icon/android/play_store_512.png
-    color: "#ffffff"
+    image: lib/assets/images/splash/sakoo_splash_android12.png
+    color: "#252525"
+    branding: lib/assets/images/splash/sakoo_branding.png
 
 dev_dependencies:
   flutter_test:
@@ -72,6 +78,13 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: lib/assets/images/app-icon/android/play_store_512.png
+  adaptive_icon_background: lib/assets/images/app-icon/android/res/mipmap-xxxhdpi/sakoo-app-logo_background.png
+  adaptive_icon_foreground: lib/assets/images/app-icon/android/res/mipmap-xxxhdpi/sakoo-app-logo_foreground.png
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -92,7 +105,12 @@ flutter:
     - lib/assets/images/nfc-scan.json
 
     # app icon assets
-    - lib/assets/images/app-icon/
+    - lib/assets/images/app-icon/android/play_store_512.png
+    - lib/assets/images/splash/sakoo_splash_android12.png
+    - lib/assets/images/splash/sakoo_branding.png
+    - lib/assets/images/app-icon/android/res/mipmap-xxxhdpi/sakoo-app-logo_foreground.png
+    - lib/assets/images/app-icon/android/res/mipmap-xxxhdpi/sakoo-app-logo_background.png
+
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

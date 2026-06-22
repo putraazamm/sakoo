@@ -8,7 +8,8 @@ class AddChildPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Menghubungkan halaman dengan controller dashboard utama
-    final ParentDashboardController controller = Get.find<ParentDashboardController>();
+    final ParentDashboardController controller =
+        Get.find<ParentDashboardController>();
 
     return Scaffold(
       appBar: AppBar(
@@ -35,7 +36,7 @@ class AddChildPage extends StatelessWidget {
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const Text(
-                'Please fill in the details below to create a new student account.',
+                'Please fill in the details below to create a new child account.',
                 style: TextStyle(color: Colors.grey, fontSize: 14),
               ),
               const SizedBox(height: 24),
@@ -58,13 +59,12 @@ class AddChildPage extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // 3. Input Tarikh Lahir (dob)
-              _buildTextField(
+              // 3. Input Tarikh Lahir (dob) - Using Date Picker
+              _buildDatePickerField(
                 label: 'Date of Birth',
-                hint: 'YYYY-MM-DD',
+                hint: 'Select your date of birth',
                 controller: controller.dobController,
                 icon: Icons.calendar_today_outlined,
-                keyboardType: TextInputType.datetime,
               ),
               const SizedBox(height: 16),
 
@@ -115,7 +115,9 @@ class AddChildPage extends StatelessWidget {
                         ? null
                         : () => controller.addNewChild(),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1B4332), // Warna tema hijau tua Sakoo
+                      backgroundColor: const Color(
+                        0xFF1B4332,
+                      ), // Warna tema hijau tua Sakoo
                       foregroundColor: Colors.white,
                       disabledBackgroundColor: Colors.grey[300],
                       shape: RoundedRectangleBorder(
@@ -190,9 +192,91 @@ class AddChildPage extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: Color(0xFF1B4332), width: 1.5),
+              borderSide: const BorderSide(
+                color: Color(0xFF1B4332),
+                width: 1.5,
+              ),
             ),
           ),
+        ),
+      ],
+    );
+  }
+
+  // Widget untuk Date Picker dengan Calendar
+  Widget _buildDatePickerField({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    required IconData icon,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          readOnly: true, // Make it read-only since we're using date picker
+          style: const TextStyle(fontSize: 15),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+            prefixIcon: Icon(icon, color: Colors.grey[600], size: 20),
+            filled: true,
+            fillColor: Colors.grey[50],
+            contentPadding: const EdgeInsets.symmetric(vertical: 16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: Colors.grey[200]!),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: Colors.grey[200]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(
+                color: Color(0xFF1B4332),
+                width: 1.5,
+              ),
+            ),
+          ),
+          onTap: () async {
+            DateTime? pickedDate = await showDatePicker(
+              context: Get.context!,
+              initialDate: DateTime.now(),
+              firstDate: DateTime(1950),
+              lastDate: DateTime.now(),
+              builder: (context, child) {
+                return Theme(
+                  data: Theme.of(context).copyWith(
+                    colorScheme: const ColorScheme.light(
+                      primary: Color(0xFF1B4332), // Sakoo green color
+                      onPrimary: Colors.white,
+                      surface: Colors.white,
+                      onSurface: Colors.black,
+                    ),
+                  ),
+                  child: child!,
+                );
+              },
+            );
+
+            if (pickedDate != null) {
+              // Format: YYYY-MM-DD
+              String formattedDate =
+                  "${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}";
+              controller.text = formattedDate;
+            }
+          },
         ),
       ],
     );

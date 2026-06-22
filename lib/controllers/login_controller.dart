@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../screens/parent/parent_dashboard_page.dart'; 
-import '../screens/merchant/merchant_dashboard_page.dart'; 
+// import '../screens/parent/parent_dashboard_page.dart';
+// import '../screens/merchant/merchant_dashboard_page.dart';
+import '../services/session_service.dart';
+import '../screens/parent/parent_main_shell.dart';
+import '../screens/merchant/merchant_main_shell.dart';
 
 class LoginController extends GetxController {
   final _supabase = Supabase.instance.client;
@@ -34,6 +37,9 @@ class LoginController extends GetxController {
           .eq('password', password.trim())
           .single();
 
+      // save session to disk
+      await SessionService.saveSession(Map<String, dynamic>.from(userData));
+
       String role = userData['role'];
       String name = userData['name'];
 
@@ -48,17 +54,16 @@ class LoginController extends GetxController {
 
       if (role == 'parent') {
         // Hantar data user ke Parent Dashboard jika peranan adalah parent
-        Get.offAll(() => const ParentDashboardPage(), arguments: userData);
+        Get.offAll(() => const ParentMainShell(), arguments: userData);
       } else if (role == 'merchant') {
         // Hantar ke Merchant Dashboard jika peranan adalah merchant
-        Get.offAll(() => const MerchantDashboardScreen(), arguments: userData);
+        Get.offAll(() => const MerchantMainShell(), arguments: userData);
       } else if (role == 'admin') {
         // Contoh persediaan masa depan jika ada role admin
         Get.snackbar("Akses Admin", "Halaman admin belum disediakan.");
       } else {
         Get.snackbar("Ralat", "Peranan pengguna tidak dikenali.");
       }
-
     } catch (error) {
       Get.snackbar(
         "Log In Failed",

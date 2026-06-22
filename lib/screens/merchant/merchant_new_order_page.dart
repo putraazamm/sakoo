@@ -9,10 +9,7 @@ class MerchantNewOrderScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Daftarkan controller untuk New Order
     final orderController = Get.put(MerchantNewOrderController());
-    
-    // Ambil controller Dashboard untuk paparkan header merchant
     final dashboardController = Get.find<MerchantDashboardController>();
 
     return Scaffold(
@@ -20,7 +17,6 @@ class MerchantNewOrderScreen extends StatelessWidget {
       body: SafeArea(
         child: Stack(
           children: [
-            // --- Latar Belakang & Senarai Boleh Skrol ---
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -42,13 +38,15 @@ class MerchantNewOrderScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               // Nama Merchant dari Dashboard Controller
-                              Obx(() => Text(
-                                dashboardController.merchantName.value,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
+                              Obx(
+                                () => Text(
+                                  dashboardController.merchantName.value,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
-                              )),
+                              ),
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -60,13 +58,16 @@ class MerchantNewOrderScreen extends StatelessWidget {
                                     ),
                                   ),
                                   // Balance Merchant dari Dashboard Controller
-                                  Obx(() => Text(
-                                    dashboardController.merchantBalance.value.toStringAsFixed(2),
-                                    style: const TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
+                                  Obx(
+                                    () => Text(
+                                      dashboardController.merchantBalance.value
+                                          .toStringAsFixed(2),
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  )),
+                                  ),
                                 ],
                               ),
                             ],
@@ -84,33 +85,87 @@ class MerchantNewOrderScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 20),
-
-                      const Text(
-                        'Food & Drink',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
                     ],
                   ),
                 ),
-
-                // --- Senarai Menu ---
+                // --- Menu/Item List ---
                 Expanded(
-                  child: Obx(() => ListView.separated(
-                    padding: const EdgeInsets.only(
-                      left: 20,
-                      right: 20,
-                      bottom: 150, // Padding bawah elak terlindung
-                    ),
-                    itemCount: orderController.menuItems.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final item = orderController.menuItems[index];
-                      return _buildMenuItem(item, orderController);
-                    },
-                  )),
+                  child: Obx(() {
+                    if (orderController.isLoading.value) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF252525),
+                        ),
+                      );
+                    }
+
+                    if (orderController.menuItems.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.restaurant_menu,
+                              size: 64,
+                              color: Colors.grey[300],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              "No items yet on the list.",
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey[300],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    // group items by category
+                    final grouped = <String, List<Map<String, dynamic>>>{};
+                    for (var item in orderController.menuItems) {
+                      final cat = item['category'] as String? ?? 'Others';
+                      grouped.putIfAbsent(cat, () => []).add(item);
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.only(
+                        left: 20,
+                        right: 20,
+                        bottom: 150,
+                      ),
+                      itemCount: grouped.keys.length,
+                      itemBuilder: (context, catIndex) {
+                        final category = grouped.keys.elementAt(catIndex);
+                        final items = grouped[category]!;
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                top: 16,
+                                bottom: 10,
+                              ),
+                              child: Text(
+                                category,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            ...items.map(
+                              (item) => Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: _buildMenuItem(item, orderController),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  }),
                 ),
               ],
             ),
@@ -145,13 +200,15 @@ class MerchantNewOrderScreen extends StatelessWidget {
                     // Total Price yang dikira secara automatik
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16.0, right: 8.0),
-                      child: Obx(() => Text(
-                        'Total: RM ${orderController.totalPrice.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                      child: Obx(
+                        () => Text(
+                          'Total: RM ${orderController.totalPrice.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      )),
+                      ),
                     ),
                     // Buttons Row
                     Row(
@@ -161,9 +218,8 @@ class MerchantNewOrderScreen extends StatelessWidget {
                           child: SizedBox(
                             height: 55,
                             child: ElevatedButton(
-                              onPressed: () {
-                                // TODO: Fungsi nak tambah menu sendiri
-                              },
+                              onPressed: () =>
+                                  _showAddItemDialog(context, orderController),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF252525),
                                 shape: RoundedRectangleBorder(
@@ -188,11 +244,16 @@ class MerchantNewOrderScreen extends StatelessWidget {
                             height: 55,
                             child: Obx(() {
                               // Butang 'Next' akan gelap jika ada pesanan, dan kelabu jika kosong
-                              final isCartReady = orderController.totalPrice > 0;
+                              final isCartReady =
+                                  orderController.totalPrice > 0;
                               return ElevatedButton(
-                                onPressed: isCartReady ? () => orderController.proceedToPayment() : null,
+                                onPressed: isCartReady
+                                    ? () => orderController.proceedToPayment()
+                                    : null,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: isCartReady ? Colors.blue : Colors.grey[400],
+                                  backgroundColor: isCartReady
+                                      ? Colors.blue
+                                      : Colors.grey[400],
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(30),
                                   ),
@@ -221,11 +282,14 @@ class MerchantNewOrderScreen extends StatelessWidget {
     );
   }
 
-  // Widget dinaik taraf untuk menerima data dinamik
-  Widget _buildMenuItem(Map<String, dynamic> item, MerchantNewOrderController controller) {
-    int id = item['id'] as int;
-    double price = item['price'] as double;
-    
+  Widget _buildMenuItem(
+    Map<String, dynamic> item,
+    MerchantNewOrderController controller,
+  ) {
+    final id = item['id'] as String;
+    final price = (item['price'] as num).toDouble();
+    final stock = item['stock'] as int;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -240,13 +304,32 @@ class MerchantNewOrderScreen extends StatelessWidget {
             children: [
               Text(
                 item['name'].toString(),
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Text(
                 'RM ${price.toStringAsFixed(2)}',
                 style: TextStyle(fontSize: 14, color: Colors.grey[700]),
               ),
+              const SizedBox(height: 2),
+
+              Obx(() {
+                final qty = controller.cart[id] ?? 0;
+                final remaining = stock - qty;
+                return Text(
+                  remaining <= 5 ? '$remaining left' : 'Stock: $remaining',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: remaining <= 5 ? Colors.orange : Colors.grey[400],
+                    fontWeight: remaining <= 5
+                        ? FontWeight.w600
+                        : FontWeight.normal,
+                  ),
+                );
+              }),
             ],
           ),
 
@@ -260,7 +343,10 @@ class MerchantNewOrderScreen extends StatelessWidget {
               children: [
                 IconButton(
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
                   icon: const Icon(Icons.remove, color: Colors.white, size: 16),
                   onPressed: () => controller.decrement(id),
                 ),
@@ -278,7 +364,10 @@ class MerchantNewOrderScreen extends StatelessWidget {
                 }),
                 IconButton(
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
                   icon: const Icon(Icons.add, color: Colors.white, size: 16),
                   onPressed: () => controller.increment(id),
                 ),
@@ -286,6 +375,159 @@ class MerchantNewOrderScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showAddItemDialog(
+    BuildContext context,
+    MerchantNewOrderController controller,
+  ) {
+    final nameController = TextEditingController();
+    final priceController = TextEditingController();
+    final stockController = TextEditingController();
+    String selectedCategory = 'Food & Drink';
+    final categories = ['Food & Drink', 'Snack', 'Beverage', 'Others'];
+    final formKey = GlobalKey<FormState>();
+
+    Get.dialog(
+      StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text(
+            'Add New Item',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // item name textfield
+                  TextFormField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      labelText: 'Item Name',
+                      hintText: 'e.g. Fried Chicken',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                    ),
+                    validator: (v) =>
+                        v == null || v.trim().isEmpty ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 14),
+
+                  // price textfield
+                  TextFormField(
+                    controller: priceController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: 'Price (RM)',
+                      hintText: 'e.g. 5.50',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                    ),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Required';
+                      if (double.tryParse(v.trim()) == null) {
+                        return 'Enter a valid number';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 14),
+
+                  // stock textfield
+                  TextFormField(
+                    controller: stockController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Stock',
+                      hintText: 'e.g. 50',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                    ),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Required';
+                      if (int.tryParse(v.trim()) == null) {
+                        return 'Enter a whole number';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 14),
+
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedCategory,
+                    decoration: InputDecoration(
+                      labelText: 'Category',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                    ),
+                    items: categories
+                        .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                        .toList(),
+                    onChanged: (v) {
+                      if (v != null) setState(() => selectedCategory = v);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (!formKey.currentState!.validate()) return;
+                Get.back();
+                controller.addItem(
+                  name: nameController.text,
+                  price: double.parse(priceController.text.trim()),
+                  category: selectedCategory,
+                  stock: int.parse(stockController.text.trim()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF252525),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)
+                ),
+              ),
+              child: const Text('Add Item', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
       ),
     );
   }

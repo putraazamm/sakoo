@@ -1,43 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/session_service.dart';
+import '../screens/welcome_screen.dart';
 
 class MerchantDashboardController extends GetxController {
   final _supabase = Supabase.instance.client;
 
   var isLoading = true.obs;
-
   var merchantData = <String, dynamic>{}.obs;
   var merchantName = "Loading...".obs;
   var merchantBalance = 0.0.obs;
-
   var transactions = [].obs;
-
   var selectedDate = Rxn<DateTime>();
 
   @override
   void onInit() {
     super.onInit();
+    _initSession();
+  }
 
-    if (Get.arguments != null) {
-      if (Get.arguments is Map) {
-        merchantData.value = Map<String, dynamic>.from(Get.arguments);
-
-        if (merchantData['name'] != null) {
-          merchantName.value = merchantData['name'];
-        }
-
-        if (merchantData['balance'] != null) {
-          merchantBalance.value = (merchantData['balance']).toDouble();
-        }
+  Future<void> _initSession() async {
+    if (Get.arguments != null && Get.arguments is Map) {
+      merchantData.value = Map<String, dynamic>.from(Get.arguments);
+    } else {
+      final saved = await SessionService.loadSession();
+      if (saved != null) {
+        merchantData.value = Map<String, dynamic>.from(saved);
       }
-
-      print("=== Data Merchant Dikutip Dari Arguments ===");
-      print("ID Merchant: ${merchantData['id']}");
-      print("Nama: ${merchantName.value}");
     }
 
-    fetchDashboardData();
+    if (merchantData['id'] == null) {
+      // no session at all -> return to welcome screen.
+      await SessionService.clearSession();
+      Get.offAll(() => const WelcomeScreen());
+      return;
+    }
+
+    merchantName.value = merchantData['name'] ?? 'Merchant';
+    merchantBalance.value = (merchantData['balance'] ?? 0.0).toDouble();
+
+    await fetchDashboardData();
   }
 
   Future<void> fetchDashboardData() async {
@@ -49,7 +52,7 @@ class MerchantDashboardController extends GetxController {
         throw Exception("Session invalid. Please log in again.");
       }
 
-      // 2. Ambil 'name' dan 'balance' terkini dari tabel 'user'
+      // fetch merchant from user table
       final userDbData = await _supabase
           .from('user')
           .select('name, balance')
@@ -58,13 +61,13 @@ class MerchantDashboardController extends GetxController {
 
       merchantName.value = userDbData['name'] ?? 'Merchant';
       merchantBalance.value = (userDbData['balance'] ?? 0.0).toDouble();
-
-      // Perbarui map data lokal
       merchantData['name'] = merchantName.value;
       merchantData['balance'] = merchantBalance.value;
 
-      // 3. Ambil riwayat transaksi merchant ini
+      // fetch the transaction of this particular merchant
       await fetchTransactions(merchantId);
+
+      await SessionService.saveSession(Map<String, dynamic>.from(merchantData));
     } catch (e) {
       debugPrint('Error fetching dashboard: $e');
       Get.snackbar(
@@ -148,8 +151,13 @@ class MerchantDashboardController extends GetxController {
   }
 
   // --- Fungsi Keluar (Logout) ---
-  void logout() {
+  void logout() async {
+    await SessionService.clearSession();
     merchantData.clear();
-    Get.offAllNamed('/login');
+    transactions.clear();
+    merchantName.value = '';
+    merchantBalance.value = 0.0;
+    await Future.delayed(const Duration(milliseconds: 100));
+    Get.offAll(() => const WelcomeScreen());
   }
 }

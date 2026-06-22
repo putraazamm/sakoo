@@ -26,7 +26,7 @@ class RecentActivityList extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('View all', style: TextStyle(color: Colors.black, fontSize: 11, fontWeight: FontWeight.bold)),
+              child: const Text('View all', style: TextStyle(color: Colors.black, fontSize: 11, fontWeight: FontWeight.bold)), // <- button to view all transactions, can sort by date.
             ),
           ],
         ),

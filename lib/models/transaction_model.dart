@@ -27,7 +27,7 @@ class TransactionModel {
       childName: json['child'] != null ? (json['child']['childName']) ?? '' : '',
       category: json['category'] ?? '',
       amount: (json['amount'] ?? 0.0).toDouble(),
-      createdAt: DateTime.parse(json['createdAt']),
+      createdAt: DateTime.parse(json['createdAt']).toLocal(),
     );
   }
 }

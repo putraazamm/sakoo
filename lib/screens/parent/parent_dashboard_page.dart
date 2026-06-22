@@ -5,7 +5,6 @@ import 'widgets/dashboard_header.dart';
 import 'widgets/total_balance_card.dart';
 import 'widgets/children_horizontal_list.dart';
 import 'widgets/recent_activity_list.dart';
-import 'package:sakoo/screens/widgets/custom_floating_nav_bar.dart';
 
 class ParentDashboardPage extends StatelessWidget {
   const ParentDashboardPage({Key? key}) : super(key: key);
@@ -13,7 +12,7 @@ class ParentDashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Memastikan controller di-inject awal
-    final ParentDashboardController controller = Get.put(ParentDashboardController());
+    final ParentDashboardController controller = Get.find<ParentDashboardController>();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
@@ -38,13 +37,6 @@ class ParentDashboardPage extends StatelessWidget {
                   ],
                 ),
               ),
-            ),
-            // Floating Island / Custom Bottom Navigation Bar
-            const Positioned(
-              bottom: 5,
-              left: 30,
-              right: 30,
-              child: CustomFloatingNavBar(),
             ),
           ],
         ),

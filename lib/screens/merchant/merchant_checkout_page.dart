@@ -3,8 +3,10 @@ import 'package:get/get.dart';
 import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
 import 'package:lottie/lottie.dart';
 import 'package:sakoo/controllers/merchant_dashboard_controller.dart';
+import 'package:sakoo/controllers/merchant_new_order_controller.dart';
+import 'package:sakoo/screens/merchant/merchant_main_shell.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; // Tambah import Supabase
-import 'merchant_dashboard_page.dart';
+// import 'merchant_dashboard_page.dart';
 
 class MerchantCheckoutScreen extends StatelessWidget {
   const MerchantCheckoutScreen({Key? key}) : super(key: key);
@@ -203,7 +205,6 @@ class MerchantCheckoutScreen extends StatelessWidget {
     }
   }
 
-  // Memanggil RPC Supabase secara selamat
   Future<void> _executePaymentOnDatabase(
     BuildContext context,
     String nfcUid,
@@ -213,13 +214,30 @@ class MerchantCheckoutScreen extends StatelessWidget {
     try {
       final supabase = Supabase.instance.client;
       final String? currentMerchantId =
-          Get.find<MerchantDashboardController>().merchantData['id'];
+          Get.find<MerchantDashboardController>().merchantData['id'] as String?;
 
-      if (currentMerchantId == null) {
+      if (currentMerchantId == null || currentMerchantId.isEmpty) {
         if (context.mounted) Navigator.of(context).pop(); // Tutup dialog scan
         Get.snackbar("Error", "Invalid merchant session. Please re-login.");
         return;
       }
+
+      // explicitly convert items to a plain List for JSONB
+      final List<Map<String, dynamic>> cleanItems = items
+          .map(
+            (item) => {
+              'name': item['name']?.toString() ?? '',
+              'quantity': (item['quantity'] as num).toInt(),
+              'subtotal': (item['subtotal'] as num).toDouble(),
+            },
+          )
+          .toList();
+
+      debugPrint("=== NFC Payment Attempt");
+      debugPrint("NFC UID : $nfcUid");
+      debugPrint("Merchant Id : $currentMerchantId");
+      debugPrint("Amount : $amount");
+      debugPrint("Items : $cleanItems");
 
       // Panggil fungsi database 'process_nfc_payment' yang dicipta dalam SQL editor
       final response = await supabase.rpc(
@@ -228,17 +246,65 @@ class MerchantCheckoutScreen extends StatelessWidget {
           'p_nfc_uid': nfcUid,
           'p_merchant_id': currentMerchantId,
           'p_amount': amount,
-          'p_order_details': items,
+          'p_order_details': cleanItems,
         },
       );
 
-      // Tutup dialog Lottie scanning selepas selesai respons database
+      debugPrint('Raw response: $response');
+      debugPrint('Response runtimeType: ${response.runtimeType}');
+
+      // close lottie scanning dialog after database response is done
       if (context.mounted) Navigator.of(context).pop();
 
-      final bool isSuccess = response['success'] ?? false;
-      final String message = response['message'] ?? 'Unknown database error.';
+      Map<String, dynamic> result;
+      if (response == null) {
+        Get.snackbar(
+          'Error',
+          'Server returned null. Check Supabase function logs.',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 6),
+        );
+        return;
+      } else if (response is Map<String, dynamic>) {
+        result = response;
+      } else if (response is Map) {
+        result = Map<String, dynamic>.from(response);
+      } else if (response is String) {
+        // sometimes jsonb comes back as a raw JSON string
+        result = Map<String, dynamic>.from(
+          (response).isNotEmpty
+              ? Map<String, dynamic>.from(Uri.splitQueryString(response))
+              : {},
+        );
+      } else {
+        Get.snackbar(
+          'Error',
+          'Unexpected response type: ${response.runtimeType}',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 6),
+        );
+        return;
+      }
+
+      debugPrint('Parsed result: $result');
+
+      final dynamic rawSuccess = result['success'];
+      final bool isSuccess =
+          rawSuccess == true || rawSuccess?.toString().toLowerCase() == 'true';
+      final String message = result['message']?.toString() ?? 'Unknown error.';
+
+      debugPrint('isSuccess: $isSuccess');
+      debugPrint('message: $message');
 
       if (isSuccess) {
+
+        if (Get.isRegistered<MerchantNewOrderController>()){
+        Get.find<MerchantNewOrderController>().clearCart();
+        }
+
+        await Get.find<MerchantDashboardController>().fetchDashboardData();
         Get.snackbar(
           "Payment Successful!",
           "RM ${amount.toStringAsFixed(2)} has been deducted.",
@@ -248,8 +314,7 @@ class MerchantCheckoutScreen extends StatelessWidget {
         );
 
         // Seterusnya kau boleh clearkan cart atau hantar merchant balik ke Dashboard:
-        Get.offAll(() => const MerchantDashboardScreen(), arguments: <String, dynamic> {'id':currentMerchantId},);
-
+        Get.offAll(() => const MerchantMainShell());
       } else {
         Get.snackbar(
           "Transaction Failed",
@@ -258,17 +323,19 @@ class MerchantCheckoutScreen extends StatelessWidget {
           colorText: Colors.white,
         );
       }
-    } catch (error) {
+    } catch (error, stackTrace) {
       if (context.mounted) Navigator.of(context).pop(); // Tutup dialog scan
 
       debugPrint("=== Supabase RPC Error ===");
-      debugPrint(error.toString());
+      debugPrint("Error : $error");
+      debugPrint("StackTrace : $stackTrace");
 
       Get.snackbar(
         "System Error",
-        "Failed to connect to backend database.",
+        error.toString(),
         backgroundColor: Colors.red,
         colorText: Colors.white,
+        duration: const Duration(seconds: 6),
       );
     }
   }
