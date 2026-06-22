@@ -160,4 +160,80 @@ class MerchantDashboardController extends GetxController {
     await Future.delayed(const Duration(milliseconds: 100));
     Get.offAll(() => const WelcomeScreen());
   }
+
+  // --- withdraw funds --- TODO: connect with bank API to directly transfer to bank account safely
+  Future<void> withdrawFunds(double amount) async {
+    if (amount <= 0) {
+      Get.closeAllSnackbars();
+      Get.snackbar(
+        "Invalid Amount",
+        "Please enter a valid amount to withdraw.",
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    if (amount > merchantBalance.value) {
+      Get.closeAllSnackbars();
+      Get.snackbar(
+        "Insufficient Balance",
+        "Your account balance is not enough for this withdrawal.",
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    try {
+      isLoading.value = true;
+      final merchantId = merchantData['id'];
+
+      double newBalance = merchantBalance.value - amount;
+
+      // update to 'user' table
+      await _supabase
+          .from('user')
+          .update({'balance': newBalance})
+          .eq('id', merchantId);
+
+      // update to 'transaction' table
+      await _supabase.from('transaction').insert({
+        'merchantId': merchantId,
+        'merchantName': 'Bank Withdrawal',
+        'category': 'Withdrawal',
+        // 'type': 'withdraw',
+        'amount': amount,
+        'createdAt': DateTime.now().toUtc().toIso8601String(),
+      });
+
+      // update local state (UI)
+      merchantBalance.value = newBalance;
+      merchantData['balance'] = newBalance;
+      await SessionService.saveSession(Map<String, dynamic>.from(merchantData));
+
+      // refresh list of transaction
+      await fetchTransactions(merchantId);
+
+      Get.back();
+      Get.closeAllSnackbars();
+      Get.snackbar(
+        "Withdrawal Successful",
+        "RM ${amount.toStringAsFixed(2)} has been withdrawn to your bank account.",
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      debugPrint("Withdraw error: $e");
+      Get.closeAllSnackbars();
+      Get.snackbar(
+        "Error",
+        "Failed to process withdrawal: $e",
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
 }

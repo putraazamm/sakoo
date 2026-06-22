@@ -19,12 +19,23 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
   String _selectedType = 'All';
   bool _newestFirst = true;
 
-  final List<String> _types = ['All', 'Top-Up', 'Withdrawal', 'Food & Drink'];
+  final List<String> _types = [
+    'All',
+    'Top-Up',
+    'Withdrawal',
+    'Food & Drink',
+    'Beverage',
+    'Snack',
+    'Others',
+  ];
 
   @override
   void initState() {
     super.initState();
-    controller.fetchAllTransactions();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.fetchAllTransactions();
+    });
   }
 
   List<TransactionModel> get _filtered {
@@ -36,9 +47,11 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
     }
 
     // Sort by date
-    list.sort((a, b) => _newestFirst
-        ? b.createdAt.compareTo(a.createdAt)
-        : a.createdAt.compareTo(b.createdAt));
+    list.sort(
+      (a, b) => _newestFirst
+          ? b.createdAt.compareTo(a.createdAt)
+          : a.createdAt.compareTo(b.createdAt),
+    );
 
     return list;
   }
@@ -51,7 +64,11 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
     final yesterday = today.subtract(const Duration(days: 1));
 
     for (final tx in _filtered) {
-      final txDay = DateTime(tx.createdAt.year, tx.createdAt.month, tx.createdAt.day);
+      final txDay = DateTime(
+        tx.createdAt.year,
+        tx.createdAt.month,
+        tx.createdAt.day,
+      );
       String label;
       if (txDay == today) {
         label = 'Today';
@@ -91,7 +108,9 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
             onPressed: () => setState(() => _newestFirst = !_newestFirst),
             tooltip: _newestFirst ? 'Newest first' : 'Oldest first',
             icon: Icon(
-              _newestFirst ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+              _newestFirst
+                  ? Icons.arrow_downward_rounded
+                  : Icons.arrow_upward_rounded,
               color: Colors.black,
             ),
           ),
@@ -115,7 +134,9 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: isSelected
                               ? const Color(0xFF252525)
@@ -127,7 +148,9 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
                             Icon(
                               _iconFor(type),
                               size: 14,
-                              color: isSelected ? Colors.white : Colors.grey[600],
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.grey[600],
                             ),
                             const SizedBox(width: 6),
                             Text(
@@ -135,7 +158,9 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: isSelected ? Colors.white : Colors.grey[700],
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.grey[700],
                               ),
                             ),
                           ],
@@ -166,8 +191,11 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.receipt_long_outlined,
-                          size: 64, color: Colors.grey[300]),
+                      Icon(
+                        Icons.receipt_long_outlined,
+                        size: 64,
+                        color: Colors.grey[300],
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'No transactions found.',
@@ -235,14 +263,18 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
       iconColor = Colors.green[600]!;
       icon = Icons.add_circle_outline_rounded;
       title = 'Top-Up';
-      subtitle = tx.childName.isNotEmpty ? 'To ${tx.childName}' : 'Wallet Top-Up';
+      subtitle = tx.childName.isNotEmpty
+          ? 'To ${tx.childName}'
+          : 'Wallet Top-Up';
     } else if (isWithdrawal) {
       amountColor = Colors.orange[700]!;
       iconBg = Colors.orange[50]!;
       iconColor = Colors.orange[600]!;
       icon = Icons.remove_circle_outline_rounded;
       title = 'Withdrawal';
-      subtitle = tx.childName.isNotEmpty ? 'From ${tx.childName}' : 'Wallet Withdrawal';
+      subtitle = tx.childName.isNotEmpty
+          ? 'From ${tx.childName}'
+          : 'Wallet Withdrawal';
     } else {
       // Food & Drink / Purchase
       amountColor = Colors.red[600]!;
@@ -339,6 +371,12 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
         return Icons.remove_circle_outline_rounded;
       case 'Food & Drink':
         return Icons.storefront_rounded;
+      case 'Beverage':
+        return Icons.emoji_food_beverage;
+      case 'Snack':
+        return Icons.storefront_rounded;
+      case 'Others':
+        return Icons.miscellaneous_services;
       default:
         return Icons.receipt_long_outlined;
     }

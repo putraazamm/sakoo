@@ -88,9 +88,8 @@ class MerchantDashboardScreen extends StatelessWidget {
                     width: double.infinity,
                     height: 55,
                     child: ElevatedButton(
-                      onPressed: () {
-                        // TODO: Fungsi withdraw nanti
-                      },
+                      onPressed: () => _showWithdrawSheet(context, controller),
+                      // TODO: Fungsi withdraw nanti
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF252525),
                         shape: RoundedRectangleBorder(
@@ -212,7 +211,7 @@ class MerchantDashboardScreen extends StatelessWidget {
                       itemBuilder: (context, index) {
                         final tx = controller.transactions[index];
 
-                        final isWithdraw = tx['type'] == 'withdraw';
+                        final isWithdraw = tx['category'] == 'Withdrawal';
                         final amount = (tx['amount'] ?? 0).toStringAsFixed(2);
 
                         // Ambil nama child dari relasi 'child' table (kalau wujud)
@@ -240,7 +239,7 @@ class MerchantDashboardScreen extends StatelessWidget {
                           ),
                           subtitle: Text(
                             tx['createdAt'] != null
-                                ? DateFormat('dd MM yyyy').format(
+                                ? DateFormat('dd MMM yyyy').format(
                                     DateTime.parse(tx['createdAt']).toLocal(),
                                   )
                                 : '',
@@ -277,6 +276,113 @@ class MerchantDashboardScreen extends StatelessWidget {
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
         ),
       ),
+    );
+  }
+
+  void _showWithdrawSheet(
+    BuildContext context,
+    MerchantDashboardController controller,
+  ) {
+    final TextEditingController amountController = TextEditingController();
+
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Withdraw Funds",
+              style: TextStyle(
+                fontSize: 18,
+                fontFamily: 'SF Pro Rounded',
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Enter the amount you want to withdraw to your bank account.",
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey[600],
+                fontFamily: 'SF Pro Rounded',
+              ),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: amountController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: InputDecoration(
+                prefixText: "RM ",
+                hintText: "0.00",
+                filled: true,
+                fillColor: Colors.grey[100],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: Obx(
+                () => ElevatedButton(
+                  onPressed: controller.isLoading.value
+                      ? null
+                      : () {
+                          double? amount = double.tryParse(
+                            amountController.text.trim(),
+                          );
+                          if (amount == null) {
+                            Get.snackbar(
+                              "Invalid Amount",
+                              "Please key in a valid amount.",
+                            );
+                            return;
+                          }
+                          controller.withdrawFunds(amount);
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2B2B2B),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: controller.isLoading.value
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          "Confirm Withdrawal",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'SF Pro Rounded',
+                          ),
+                        ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      isScrollControlled:
+          true, // Memastikan sheet ditolak naik jika keyboard muncul
     );
   }
 }

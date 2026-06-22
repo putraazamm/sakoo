@@ -149,6 +149,7 @@ class MerchantNewOrderController extends GetxController {
           'price': item['price'],
           'quantity': qty,
           'subtotal': (item['price'] as double) * qty,
+          'category': item['category'] ?? 'Others',
         });
       }
     }

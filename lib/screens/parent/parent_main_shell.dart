@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:sakoo/controllers/parent_dashboard_controller.dart';
+import 'package:sakoo/screens/parent/analytics_page.dart';
 import 'parent_dashboard_page.dart';
 import 'settings_page.dart';
 
@@ -26,6 +27,7 @@ class _ParentMainShellState extends State<ParentMainShell> {
 
   final List<Widget> _pages = const [
     ParentDashboardPage(),
+    AnalyticsPage(), 
     ParentSettingsPage(),
   ];
 
@@ -56,6 +58,7 @@ class _ParentMainShellState extends State<ParentMainShell> {
               color: Colors.grey[600],
               tabs: const [
                 GButton(icon: Icons.home_rounded, text: 'Home'),
+                GButton(icon: Icons.analytics, text: 'Analytics'),
                 GButton(icon: Icons.settings_rounded, text: 'Settings'),
               ],
               selectedIndex: _selectedIndex,

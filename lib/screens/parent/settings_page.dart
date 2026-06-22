@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/parent_dashboard_controller.dart';
+import 'edit_profile_page.dart';
 
 class ParentSettingsPage extends StatelessWidget {
   const ParentSettingsPage({Key? key}) : super(key: key);
@@ -28,7 +29,11 @@ class ParentSettingsPage extends StatelessWidget {
               const SizedBox(height: 32),
 
               // Profile section
-              Obx(() => Container(
+              GestureDetector(
+                onTap: () {
+                  Get.to(() => const EditProfilePage());
+                },
+                child: Obx(() => Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -73,6 +78,8 @@ class ParentSettingsPage extends StatelessWidget {
                       ],
                     ),
                   )),
+              ),
+              
 
               const Spacer(),
 
@@ -126,7 +133,7 @@ class ParentSettingsPage extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              // const SizedBox(height: 16),
             ],
           ),
         ),

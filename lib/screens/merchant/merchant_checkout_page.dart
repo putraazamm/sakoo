@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
+// import 'package:get/get_connect/http/src/http/io/http_request_io.dart';
 import 'package:lottie/lottie.dart';
 import 'package:sakoo/controllers/merchant_dashboard_controller.dart';
 import 'package:sakoo/controllers/merchant_new_order_controller.dart';
-import 'package:sakoo/screens/merchant/merchant_main_shell.dart';
+// import 'package:sakoo/models/models.dart';
+// import 'package:sakoo/screens/merchant/merchant_main_shell.dart';
+import 'package:sakoo/screens/merchant/merchant_new_order_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; // Tambah import Supabase
 // import 'merchant_dashboard_page.dart';
 
@@ -229,9 +232,15 @@ class MerchantCheckoutScreen extends StatelessWidget {
               'name': item['name']?.toString() ?? '',
               'quantity': (item['quantity'] as num).toInt(),
               'subtotal': (item['subtotal'] as num).toDouble(),
+              'category': item['category']?.toString() ?? 'Others',
             },
           )
           .toList();
+
+      String mainCategory = 'Others';
+      if (items.isNotEmpty && items[0]['category'] != null) {
+        mainCategory = items[0]['category'];
+      }
 
       debugPrint("=== NFC Payment Attempt");
       debugPrint("NFC UID : $nfcUid");
@@ -246,6 +255,7 @@ class MerchantCheckoutScreen extends StatelessWidget {
           'p_nfc_uid': nfcUid,
           'p_merchant_id': currentMerchantId,
           'p_amount': amount,
+          'p_category': mainCategory,
           'p_order_details': cleanItems,
         },
       );
@@ -299,22 +309,25 @@ class MerchantCheckoutScreen extends StatelessWidget {
       debugPrint('message: $message');
 
       if (isSuccess) {
-
-        if (Get.isRegistered<MerchantNewOrderController>()){
-        Get.find<MerchantNewOrderController>().clearCart();
+        if (Get.isRegistered<MerchantNewOrderController>()) {
+          final newOrderCtrl = Get.find<MerchantNewOrderController>();
+          newOrderCtrl.clearCart();
+          newOrderCtrl.fetchMenuItems();
         }
 
         await Get.find<MerchantDashboardController>().fetchDashboardData();
+
         Get.snackbar(
           "Payment Successful!",
-          "RM ${amount.toStringAsFixed(2)} has been deducted.",
+          "RM ${amount.toStringAsFixed(2)} has been added to your account.']}.",
           backgroundColor: Colors.green,
           colorText: Colors.white,
           duration: const Duration(seconds: 4),
         );
 
         // Seterusnya kau boleh clearkan cart atau hantar merchant balik ke Dashboard:
-        Get.offAll(() => const MerchantMainShell());
+        Get.offAll(() => const MerchantNewOrderScreen());
+
       } else {
         Get.snackbar(
           "Transaction Failed",

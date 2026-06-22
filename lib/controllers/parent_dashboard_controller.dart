@@ -38,14 +38,6 @@ class ParentDashboardController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-
-    // if (Get.arguments != null) {
-    //   parentData.value = Get.arguments as Map<String, dynamic>;
-
-    //   print("=== Data Parent Dikutip Dari Arguments ===");
-    //   print("Nama: ${parentName.value}");
-    //   print("Baki: ${parentBalance.value}");
-    // }
     _initSession();
   }
 
@@ -70,18 +62,6 @@ class ParentDashboardController extends GetxController {
     parentBalance.value = (parentData['balance'] ?? 0.0).toDouble();
     await fetchDashboardData();
   }
-
-  // Future<void> _loadSessionIfNeeded() async {
-  //   if (parentData.isEmpty) {
-  //     final saved = await SessionService.loadSession();
-  //     if (saved != null) {
-  //       parentData.value = saved;
-  //     }
-  //   }
-  //   parentName.value = parentData['name'] ?? 'Parent';
-  //   parentBalance.value = (parentData['balance'] ?? 0.0).toDouble();
-  //   fetchDashboardData();
-  // }
 
   void logout() async {
     await SessionService.clearSession();
@@ -284,6 +264,7 @@ class ParentDashboardController extends GetxController {
     double oldParentBalance = parentBalance.value;
 
     if (parentBalance.value < amount) {
+      Get.closeAllSnackbars();
       Get.snackbar(
         "Insufficient balance",
         "Please add funds at least RM $amount to your account first",
@@ -319,16 +300,23 @@ class ParentDashboardController extends GetxController {
         'createdAt': DateTime.now().toUtc().toIso8601String(),
       });
 
-      Get.snackbar(
-        "Top-up successful!",
-        "RM ${amount.toStringAsFixed(2)} is successfully credited to ${oldChild.childName}.",
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.green.withOpacity(0.1),
-      );
+      await fetchAllTransactions();
+
+      Get.closeAllSnackbars();
+      Future.delayed(const Duration(milliseconds: 150), () {
+        Get.snackbar(
+          "Top-up successful!",
+          "RM ${amount.toStringAsFixed(2)} is successfully credited to ${oldChild.childName}.",
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.green.withOpacity(0.1),
+        );
+      });
     } catch (e) {
       parentBalance.value = oldParentBalance;
       parentData['balance'] = oldParentBalance;
       childrenList[index] = oldChild;
+
+      Get.closeAllSnackbars();
       Get.snackbar(
         "Error",
         "Failed to top up: $e",
@@ -395,18 +383,24 @@ class ParentDashboardController extends GetxController {
 
       await fetchDashboardData();
 
-      Get.snackbar(
-        "Withdrawal Successful!",
-        "RM ${amount.toStringAsFixed(2)} has been withdrawn from ${oldChild.childNickname}.",
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.green.withOpacity(0.1),
-      );
+      await fetchAllTransactions();
+
+      Get.closeAllSnackbars();
+      Future.delayed(const Duration(milliseconds: 150), () {
+        Get.snackbar(
+          "Withdrawal Successful!",
+          "RM ${amount.toStringAsFixed(2)} has been withdrawn from ${oldChild.childNickname}.",
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.green.withOpacity(0.1),
+        );
+      });
     } catch (e) {
       // rollback if anything falls
       parentBalance.value = oldParentBalance;
       parentData['balance'] = oldParentBalance;
       childrenList[index] = oldChild;
 
+      Get.closeAllSnackbars();
       Get.snackbar(
         "Error",
         "Failed to withdraw funds: $e",
