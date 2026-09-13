@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/parent_dashboard_controller.dart';
-import '../parent/parent_dashboard_page.dart';
+// import '../parent/parent_dashboard_page.dart';
 
 class AddFundsPage extends StatefulWidget {
   const AddFundsPage({Key? key}) : super(key: key);
@@ -49,22 +49,31 @@ class _AddFundsPageState extends State<AddFundsPage> {
   void _submitFunds() async {
     final String text = _amountController.text.trim();
     if (text.isEmpty || text == "0.00") {
-      Get.snackbar("Info", "Sila masukkan jumlah amaun dahulu.");
+      Get.snackbar("Info", "Please enter the right amount.");
       return;
     }
 
     final double? amount = double.tryParse(text);
     if (amount == null || amount <= 0) {
-      Get.snackbar("Ralat", "Sila masukkan amaun nombor yang sah.");
+      Get.snackbar("Error", "Please enter the amount >= 0.");
       return;
     }
 
     // Panggil fungsi controller
     bool success = await controller.addFundsToWallet(amount);
     if (success) {
-      Get.offAll(() => const ParentDashboardPage(),
-      arguments: controller.parentData,
-      );
+      Get.back();
+
+      Future.delayed(const Duration(milliseconds: 150), () {
+        Get.snackbar(
+          "Successful!",
+          "RM ${amount.toStringAsFixed(2)} successfully credited to your wallet.",
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(15),
+        );
+      });
     }
   }
 

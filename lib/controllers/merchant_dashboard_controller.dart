@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/session_service.dart';
 import '../screens/welcome_screen.dart';
+import "../controllers/kiosk_controller.dart";
+import '../screens/kiosk/kiosk_idle_screen.dart';
 
 class MerchantDashboardController extends GetxController {
   final _supabase = Supabase.instance.client;
@@ -73,7 +75,7 @@ class MerchantDashboardController extends GetxController {
       Get.snackbar(
         "Ralat Pangkalan Data",
         e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
       );
@@ -235,5 +237,19 @@ class MerchantDashboardController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  void enterKioskMode() {
+    final kiosk = Get.isRegistered<KioskController>()
+        ? Get.find<KioskController>()
+        : Get.put(KioskController(), permanent: true);
+
+    kiosk.initialize(
+      merchantId: merchantData['id'] as String,
+      merchantName: merchantData['name'] as String,
+      cameFromMerchantApp: true,
+    );
+
+    Get.to(() => const KioskIdleScreen());
   }
 }

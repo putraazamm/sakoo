@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:sakoo/screens/auth/login_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SignUpController extends GetxController {
@@ -71,23 +72,23 @@ class SignUpController extends GetxController {
         'role': 'parent',
       });
 
-        Get.snackbar(
-          "Pendaftaran Berjaya",
-          "Akaun anda telah berjaya dicipta! Sila log masuk.",
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
+      Get.snackbar(
+        "Registration Successful",
+        "Your account is created successfully! Please log in.",
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
 
-        // Bersihkan borang & bawa pengguna ke skrin Login
-        clearControllers();
-        Get.offNamed('lib/screens/auth/login_screen.dart');
-      
+      // Bersihkan borang & bawa pengguna ke skrin Login
+      clearControllers();
+      Get.offAll(() => LoginScreen());
     } catch (e) {
+      Get.closeAllSnackbars();
       Get.snackbar(
         "Sign Up Error",
         e.toString().replaceAll("Exception:", "").trim(),
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
       );

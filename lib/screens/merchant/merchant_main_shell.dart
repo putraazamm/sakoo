@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'merchant_dashboard_page.dart';
+import 'merchant_orders_page.dart';
 import 'settings_page.dart';
 import 'package:get/get.dart';
+import 'merchant_menu_page.dart';
 import '../../controllers/merchant_dashboard_controller.dart';
 
 class MerchantMainShell extends StatefulWidget {
@@ -26,6 +28,8 @@ class _MerchantMainShellState extends State<MerchantMainShell> {
 
   final List<Widget> _pages = const [
     MerchantDashboardScreen(),
+    MerchantOrdersPage(),
+    MerchantMenuPage(),
     MerchantSettingsPage(),
   ];
 
@@ -56,6 +60,8 @@ class _MerchantMainShellState extends State<MerchantMainShell> {
               color: Colors.grey[600],
               tabs: const [
                 GButton(icon: Icons.home_rounded, text: 'Home'),
+                GButton(icon: Icons.receipt_long_rounded, text: 'Orders'),
+                GButton(icon: Icons.restaurant_menu_rounded, text: 'Menu'),
                 GButton(icon: Icons.settings_rounded, text: 'Settings'),
               ],
               selectedIndex: _selectedIndex,

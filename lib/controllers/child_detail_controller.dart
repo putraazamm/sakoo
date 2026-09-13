@@ -11,6 +11,7 @@ import '../models/child_model.dart';
 import '../models/transaction_model.dart';
 import '../screens/parent/widgets/edit_child_sheet.dart';
 import 'parent_dashboard_controller.dart';
+import '../models/goal_model.dart';
 
 class ChildDetailController extends GetxController {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -41,6 +42,7 @@ class ChildDetailController extends GetxController {
     super.onInit();
     childData.value = Get.arguments as ChildModel;
     fetchChildTransactions();
+    fetchGoals();
   }
 
   // Fetch all transactions belonging to this child (top-ups, withdrawals, purchases)
@@ -82,12 +84,7 @@ class ChildDetailController extends GetxController {
 
     List<Map<String, dynamic>> summary = List.generate(7, (i) {
       final day = today.subtract(Duration(days: 6 - i));
-      return {
-        'date': day,
-        'topUp': 0.0,
-        'withdraw': 0.0,
-        'spend': 0.0,
-      };
+      return {'date': day, 'topUp': 0.0, 'withdraw': 0.0, 'spend': 0.0};
     });
 
     final startRange = today.subtract(const Duration(days: 6));
@@ -122,20 +119,183 @@ class ChildDetailController extends GetxController {
 
   // Totals across the visible 7-day window, used for the summary header.
   double get weeklyTotalSpend => weeklySummary.fold<double>(
-        0.0,
-        (sum, day) => sum + (day['spend'] as double),
-      );
+    0.0,
+    (sum, day) => sum + (day['spend'] as double),
+  );
 
   double get weeklyTotalTopUp => weeklySummary.fold<double>(
-        0.0,
-        (sum, day) => sum + (day['topUp'] as double),
-      );
+    0.0,
+    (sum, day) => sum + (day['topUp'] as double),
+  );
 
   double get weeklyTotalWithdraw => weeklySummary.fold<double>(
-        0.0,
-        (sum, day) => sum + (day['withdraw'] as double),
-      );
+    0.0,
+    (sum, day) => sum + (day['withdraw'] as double),
+  );
 
+    // --- Savings Goals state --- start
+  var goalsList = <GoalModel>[].obs;
+  var isLoadingGoals = true.obs;
+
+  Future<void> fetchGoals() async {
+    final child = childData.value;
+    if (child == null) return;
+
+    try {
+      isLoadingGoals.value = true;
+
+      final List<dynamic> data = await _supabase
+          .from('goal')
+          .select()
+          .eq('childId', child.childId)
+          .order('createdAt', ascending: false);
+
+      goalsList.assignAll(data.map((e) => GoalModel.fromJson(e)).toList());
+    } catch (e) {
+      Get.snackbar(
+        "Error",
+        "Failed to load savings goals: $e",
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.redAccent.withOpacity(0.1),
+      );
+    } finally {
+      isLoadingGoals.value = false;
+    }
+  }
+
+  Future<void> createGoal(String title, double target, {String icon = '🎯'}) async {
+    final child = childData.value;
+    if (child == null) return;
+
+    if (title.trim().isEmpty || target <= 0) {
+      Get.snackbar("Error", "Please enter a goal title and a target amount above RM 0.");
+      return;
+    }
+
+    try {
+      final parentId = Get.find<ParentDashboardController>().parentData['id'];
+      if (parentId == null) throw Exception("Session ends.");
+
+      await _supabase.from('goal').insert({
+        'childId': child.childId,
+        'parentId': parentId,
+        'goalTitle': title.trim(),
+        'targetAmount': target,
+        'collectedAmount': 0.0,
+        'icon': icon,
+      });
+
+      await fetchGoals();
+      Get.back(); // close the "New Goal" dialog
+      Get.snackbar(
+        "Goal Added!",
+        "\"${title.trim()}\" is ready for ${child.childNickname.isNotEmpty ? child.childNickname : child.childName} to save towards.",
+        backgroundColor: Colors.green.withOpacity(0.1),
+      );
+    } catch (e) {
+      Get.snackbar("Error", "Failed to create goal: $e");
+    }
+  }
+
+  // Moves money from the child's spendable card balance into a goal.
+  Future<void> contributeToGoal(String goalId, double amount) async {
+    final child = childData.value;
+    if (child == null) return;
+
+    if (amount <= 0) {
+      Get.snackbar("Error", "Please enter an amount above RM 0.");
+      return;
+    }
+
+    try {
+      final resp = await _supabase.rpc('contribute_to_goal', params: {
+        'p_goal_id': goalId,
+        'p_child_id': child.childId,
+        'p_amount': amount,
+      });
+
+      final result = Map<String, dynamic>.from(resp);
+      final success = result['success'] == true;
+      final message = result['message']?.toString() ?? '';
+
+      if (success) {
+        Get.back(); // close the "Contribute" dialog
+        await fetchGoals();
+        await _refreshChildBalance();
+        Get.snackbar("Saved!", message, backgroundColor: Colors.green.withOpacity(0.1));
+      } else {
+        Get.snackbar("Failed", message, backgroundColor: Colors.redAccent.withOpacity(0.1));
+      }
+    } catch (e) {
+      Get.snackbar("Error", "Failed to contribute: $e");
+    }
+  }
+
+  // Moves the saved amount back to the child's spendable card balance,
+  // e.g. once a goal is reached and they're ready to buy the item.
+  Future<void> cashOutGoal(String goalId) async {
+    final child = childData.value;
+    if (child == null) return;
+
+    try {
+      final resp = await _supabase.rpc('cash_out_goal', params: {
+        'p_goal_id': goalId,
+        'p_child_id': child.childId,
+      });
+
+      final result = Map<String, dynamic>.from(resp);
+      final success = result['success'] == true;
+      final message = result['message']?.toString() ?? '';
+
+      if (success) {
+        await fetchGoals();
+        await _refreshChildBalance();
+        Get.snackbar("Cashed Out!", message, backgroundColor: Colors.green.withOpacity(0.1));
+      } else {
+        Get.snackbar("Failed", message, backgroundColor: Colors.redAccent.withOpacity(0.1));
+      }
+    } catch (e) {
+      Get.snackbar("Error", "Failed to cash out: $e");
+    }
+  }
+
+  // A goal can only be deleted once its saved amount has been cashed out —
+  // otherwise the money would just vanish from the child's total.
+  Future<void> deleteGoal(String goalId, double collectedAmount) async {
+    if (collectedAmount > 0) {
+      Get.snackbar(
+        "Cash Out First",
+        "This goal still has savings in it. Cash it out before deleting.",
+        backgroundColor: Colors.orange.withOpacity(0.1),
+      );
+      return;
+    }
+
+    try {
+      await _supabase.from('goal').delete().eq('goalId', goalId);
+      await fetchGoals();
+    } catch (e) {
+      Get.snackbar("Error", "Failed to delete goal: $e");
+    }
+  }
+
+  Future<void> _refreshChildBalance() async {
+    final child = childData.value;
+    if (child == null) return;
+    try {
+      final row = await _supabase
+          .from('child')
+          .select('childBalance')
+          .eq('childId', child.childId)
+          .single();
+      childData.value = child.copyWith(
+        childBalance: (row['childBalance'] ?? 0.0).toDouble(),
+      );
+    } catch (_) {
+      // non-fatal — balance will just be stale until the next full refresh
+    }
+  }
+  // Saving Goals State --- ends
   Future<void> linkNfcCard() async {
     try {
       var availability = await FlutterNfcKit.nfcAvailability;
@@ -420,195 +580,188 @@ class ChildDetailController extends GetxController {
           bool isSliderMode = isDeactivatedMode.value;
 
           return AnimatedSwitcher(
-                duration: const Duration(milliseconds: 400),
-                transitionBuilder: (Widget child, Animation<double> animation) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
-                child: !isSliderMode
-                    // 1. PAPARAN ASAL: BUTANG
-                    ? SizedBox(
-                        key: const ValueKey('action_button'),
-                        width: double.infinity,
-                        height: 52,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            isDeactivatedMode.value = true;
-                            // set the number of slides needed by status. for now, 3 -> deactivate, once -> activate
-                            deactivationSlidesRemaining.value = isCardActive
-                                ? 3
-                                : 1;
-                          },
-                          style: ElevatedButton.styleFrom(
-                            // Merah untuk Deactivate, Hijau untuk Activate
-                            backgroundColor: isCardActive
-                                ? Colors.redAccent
-                                : Colors.green,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(
-                            isCardActive ? "Deactivate Card" : "Activate Card",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'SF Pro Rounded',
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                      )
-                    // 2. PAPARAN SLIDER
-                    : ActionSlider.standard(
-                        key: ValueKey('action_slider_$isCardActive'),
-                        width: double.infinity,
-                        height: 52,
-                        direction: TextDirection.ltr,
-                        rolling: false,
-
-                        toggleColor: isCardActive
-                            ? (slides == 1 ? Colors.redAccent : Colors.white)
-                            : Colors.green,
+            duration: const Duration(milliseconds: 400),
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+            child: !isSliderMode
+                // 1. PAPARAN ASAL: BUTANG
+                ? SizedBox(
+                    key: const ValueKey('action_button'),
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        isDeactivatedMode.value = true;
+                        // set the number of slides needed by status. for now, 3 -> deactivate, once -> activate
+                        deactivationSlidesRemaining.value = isCardActive
+                            ? 3
+                            : 1;
+                      },
+                      style: ElevatedButton.styleFrom(
+                        // Merah untuk Deactivate, Hijau untuk Activate
                         backgroundColor: isCardActive
-                            ? (slides == 1
-                                  ? Colors.red.withOpacity(0.5)
-                                  : Colors.grey[200])
-                            : Colors.green.withOpacity(0.1),
-                        child: Text(
-                          isCardActive
-                              ? (slides > 1
-                                    ? "Slide $slides times to deactivate"
-                                    : "Slide one last time to confirm.")
-                              : "Slide to activate card",
-                          style: TextStyle(
-                            color: isCardActive
-                                ? (slides == 1 ? Colors.white : Colors.black87)
-                                : Colors.green[800],
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'SF Pro Rounded',
-                          ),
+                            ? Colors.redAccent
+                            : Colors.green,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        action: (controller) async {
-                          controller.loading();
-                          await Future.delayed(
-                            const Duration(milliseconds: 300),
+                      ),
+                      child: Text(
+                        isCardActive ? "Deactivate Card" : "Activate Card",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'SF Pro Rounded',
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  )
+                // 2. PAPARAN SLIDER
+                : ActionSlider.standard(
+                    key: ValueKey('action_slider_$isCardActive'),
+                    width: double.infinity,
+                    height: 52,
+                    direction: TextDirection.ltr,
+                    rolling: false,
+
+                    toggleColor: isCardActive
+                        ? (slides == 1 ? Colors.redAccent : Colors.white)
+                        : Colors.green,
+                    backgroundColor: isCardActive
+                        ? (slides == 1
+                              ? Colors.red.withOpacity(0.5)
+                              : Colors.grey[200])
+                        : Colors.green.withOpacity(0.1),
+                    child: Text(
+                      isCardActive
+                          ? (slides > 1
+                                ? "Slide $slides times to deactivate"
+                                : "Slide one last time to confirm.")
+                          : "Slide to activate card",
+                      style: TextStyle(
+                        color: isCardActive
+                            ? (slides == 1 ? Colors.white : Colors.black87)
+                            : Colors.green[800],
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'SF Pro Rounded',
+                      ),
+                    ),
+                    action: (controller) async {
+                      controller.loading();
+                      await Future.delayed(const Duration(milliseconds: 300));
+
+                      // Logik: Kalau Deactivate & belum cukup 3 kali slide
+                      if (isCardActive && slides > 1) {
+                        controller.reset(); // Biar slider gerak balik kiri DULU
+                        await Future.delayed(
+                          const Duration(milliseconds: 400),
+                        ); // Tunggu animasi selesai
+                        deactivationSlidesRemaining.value -=
+                            1; // BARU update UI state
+                      }
+                      // Logik: Cukup 3 kali Deactivate ATAU 1 kali Activate
+                      else {
+                        controller.success();
+
+                        try {
+                          bool newStatus =
+                              !isCardActive; // Terbalikkan status (true -> false, false -> true)
+
+                          // Update di Supabase
+                          await _supabase
+                              .from('child')
+                              .update({'isActive': newStatus})
+                              .eq('childId', child.childId);
+
+                          // Update State Tempatan
+                          var updatedChild = childData.value!;
+                          childData.value = updatedChild.copyWith(
+                            isActive: newStatus, // Status baru
                           );
 
-                          // Logik: Kalau Deactivate & belum cukup 3 kali slide
-                          if (isCardActive && slides > 1) {
-                            controller
-                                .reset(); // Biar slider gerak balik kiri DULU
-                            await Future.delayed(
-                              const Duration(milliseconds: 400),
-                            ); // Tunggu animasi selesai
-                            deactivationSlidesRemaining.value -=
-                                1; // BARU update UI state
-                          }
-                          // Logik: Cukup 3 kali Deactivate ATAU 1 kali Activate
-                          else {
-                            controller.success();
+                          Get.find<ParentDashboardController>()
+                              .fetchDashboardData();
 
-                            try {
-                              bool newStatus =
-                                  !isCardActive; // Terbalikkan status (true -> false, false -> true)
+                          await Future.delayed(
+                            const Duration(milliseconds: 500),
+                          ); // Biar tengok success hijau/merah
+                          Get.back();
 
-                              // Update di Supabase
-                              await _supabase
-                                  .from('child')
-                                  .update({'isActive': newStatus})
-                                  .eq('childId', child.childId);
-
-                              // Update State Tempatan
-                              var updatedChild = childData.value!;
-                              childData.value = updatedChild.copyWith(
-                                isActive: newStatus, // Status baru
-                              );
-
-                              Get.find<ParentDashboardController>()
-                                  .fetchDashboardData();
-
-                              await Future.delayed(
-                                const Duration(milliseconds: 500),
-                              ); // Biar tengok success hijau/merah
-                              Get.back();
-
-                              // Tunjuk mesej berbeza ikut status
-                              Get.snackbar(
-                                newStatus
-                                    ? "Card Activated"
-                                    : "Card Deactivated",
-                                newStatus
-                                    ? "${updatedChild.childNickname}'s card is now active."
-                                    : "${updatedChild.childNickname}'s card has been temporarily frozen.",
-                                backgroundColor: newStatus
-                                    ? Colors.green.withOpacity(0.2)
-                                    : Colors.orange.withOpacity(0.2),
-                                colorText: Colors.black87,
-                                snackPosition: SnackPosition.TOP,
-                              );
-                            } catch (e) {
-                              controller.reset();
-                              // Reset bilangan slide kalau gagal
-                              deactivationSlidesRemaining.value = isCardActive
-                                  ? 3
-                                  : 1;
-                              Get.snackbar(
-                                "Error",
-                                "Failed to update card status: $e",
-                                backgroundColor: Colors.redAccent.withOpacity(
-                                  0.1,
-                                ),
-                              );
-                            }
-                          }
-                        },
-                      ),
-              );
-            }),
-
-            // Butang Cancel Deactivation / Activation
-            Obx(
-              () => isDeactivatedMode.value
-                  ? Column(
-                      children: [
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: () {
-                            isDeactivatedMode.value = false;
-                            // Reset ikut status semasa kalau di-cancel
-                            deactivationSlidesRemaining.value =
-                                (childData.value?.isActive ?? false) ? 3 : 1;
-                          },
-                          child: Text(
-                            "Cancel",
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontFamily: 'SF Pro Rounded',
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-                  : const SizedBox.shrink(),
-            ),
-
-            if (isDeactivatedMode.value) ...[
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () {
-                  isDeactivatedMode.value = false;
-                  deactivationSlidesRemaining.value = 3; // reset slider
-                },
-                child: const Text(
-                  "Cancel Deactivation",
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontFamily: 'SF Pro Rounded',
+                          // Tunjuk mesej berbeza ikut status
+                          Get.snackbar(
+                            newStatus ? "Card Activated" : "Card Deactivated",
+                            newStatus
+                                ? "${updatedChild.childNickname}'s card is now active."
+                                : "${updatedChild.childNickname}'s card has been temporarily frozen.",
+                            backgroundColor: newStatus
+                                ? Colors.green.withOpacity(0.2)
+                                : Colors.orange.withOpacity(0.2),
+                            colorText: Colors.black87,
+                            snackPosition: SnackPosition.TOP,
+                          );
+                        } catch (e) {
+                          controller.reset();
+                          // Reset bilangan slide kalau gagal
+                          deactivationSlidesRemaining.value = isCardActive
+                              ? 3
+                              : 1;
+                          Get.snackbar(
+                            "Error",
+                            "Failed to update card status: $e",
+                            backgroundColor: Colors.redAccent.withOpacity(0.1),
+                          );
+                        }
+                      }
+                    },
                   ),
-                ),
+          );
+        }),
+
+        // Butang Cancel Deactivation / Activation
+        Obx(
+          () => isDeactivatedMode.value
+              ? Column(
+                  children: [
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () {
+                        isDeactivatedMode.value = false;
+                        // Reset ikut status semasa kalau di-cancel
+                        deactivationSlidesRemaining.value =
+                            (childData.value?.isActive ?? false) ? 3 : 1;
+                      },
+                      child: Text(
+                        "Cancel",
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontFamily: 'SF Pro Rounded',
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : const SizedBox.shrink(),
+        ),
+
+        if (isDeactivatedMode.value) ...[
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () {
+              isDeactivatedMode.value = false;
+              deactivationSlidesRemaining.value = 3; // reset slider
+            },
+            child: const Text(
+              "Cancel Deactivation",
+              style: TextStyle(
+                color: Colors.grey,
+                fontFamily: 'SF Pro Rounded',
               ),
-            ],
+            ),
+          ),
+        ],
       ],
     );
   }

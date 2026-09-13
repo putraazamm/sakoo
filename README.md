@@ -1,17 +1,24 @@
 # sakoo
+A digital allowance management application.
 
-A new Flutter project.
 
-## Getting Started
+=== future improvement ===
+1. utilize the auth from supabase. like the login session timer and etc.
+2. improve the continuity of the UI across the pages.
+3. see inspirations of UI from X and Pinterest. Makes the UI more friendly and usable.
+4. improve the security side of the app from the frontend to the backend.
+5. add new function for role - admin
+6. add more functions to the merchant's side.
+7. restructure and refactor the codebase, so it will be more easier to read and maintain.
+8. update the fyp report
 
-This project is a starting point for a Flutter application.
+need to finish all this before the mid of short/special semester.
 
-A few resources to get you started if this is your first Flutter project:
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+fyp 2
+1. need to add admin module.
+2. change from vendor's worker to input the food/drink from the menu for the student to allow the student to choose their own food/drink from the menu. (update the student interface to kiosk interface like in mcd and kfc.)
+3. polish the interface and the security.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+
+first kiosk id: U-00000008

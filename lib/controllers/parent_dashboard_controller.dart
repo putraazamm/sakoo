@@ -118,7 +118,7 @@ class ParentDashboardController extends GetxController {
       Get.snackbar(
         "Database Error",
         e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
       );
     } finally {
       isLoading.value = false;
@@ -213,7 +213,7 @@ class ParentDashboardController extends GetxController {
       Get.snackbar(
         "Error",
         "Failed to register child: $e",
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
       );
     } finally {
       isLoading.value = false;
@@ -248,7 +248,7 @@ class ParentDashboardController extends GetxController {
       Get.snackbar(
         "Failed",
         "Failed to update daily limit to database: $e",
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
       );
     }
   }
@@ -444,19 +444,19 @@ class ParentDashboardController extends GetxController {
 
       await fetchDashboardData();
 
-      Get.snackbar(
-        "Successful!",
-        "RM ${amount.toStringAsFixed(2)} successfully credited to your wallet.",
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.green.withOpacity(0.1),
-        margin: EdgeInsets.all(15),
-      );
+      // Get.snackbar(
+      //   "Successful!",
+      //   "RM ${amount.toStringAsFixed(2)} successfully credited to your wallet.",
+      //   snackPosition: SnackPosition.TOP,
+      //   backgroundColor: Colors.green.withOpacity(0.1),
+      //   margin: EdgeInsets.all(15),
+      // );
       return true;
     } catch (e) {
       Get.snackbar(
         "Failed",
         "Failed to add funds. $e.",
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
       );
       return false;
     } finally {

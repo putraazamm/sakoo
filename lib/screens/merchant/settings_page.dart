@@ -74,6 +74,56 @@ class MerchantSettingsPage extends StatelessWidget {
                     ),
                   )),
 
+              const SizedBox(height: 16),
+
+              // Enter Kiosk Mode — reuses this same merchant session, no
+              // separate login or password needed.
+              InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => controller.enterKioskMode(),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF9F9F9),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.point_of_sale_rounded,
+                            color: Color(0xFF252525)),
+                      ),
+                      const SizedBox(width: 14),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Kiosk Mode',
+                              style: TextStyle(
+                                  fontSize: 14, fontWeight: FontWeight.w600),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Turn this device into an ordering kiosk for your store.',
+                              style:
+                                  TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right_rounded,
+                          color: Colors.grey),
+                    ],
+                  ),
+                ),
+              ),
+
               const Spacer(),
 
               // Logout button

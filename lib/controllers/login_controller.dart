@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-// import '../screens/parent/parent_dashboard_page.dart';
-// import '../screens/merchant/merchant_dashboard_page.dart';
 import '../services/session_service.dart';
 import '../screens/parent/parent_main_shell.dart';
 import '../screens/merchant/merchant_main_shell.dart';
+import '../screens/kiosk/kiosk_idle_screen.dart';
+import '../controllers/kiosk_controller.dart';
 
 class LoginController extends GetxController {
   final _supabase = Supabase.instance.client;
@@ -20,7 +20,7 @@ class LoginController extends GetxController {
       Get.snackbar(
         "Please fill all the fields.",
         "Email/Username and Password cannot left blank.",
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.red[100],
         colorText: Colors.red[900],
       );
@@ -58,6 +58,19 @@ class LoginController extends GetxController {
       } else if (role == 'merchant') {
         // Hantar ke Merchant Dashboard jika peranan adalah merchant
         Get.offAll(() => const MerchantMainShell(), arguments: userData);
+      } else if (role == 'kiosk') {
+        // Dedicated kiosk device logging in directly (not via a merchant's
+        // own Settings > Enter Kiosk Mode). initialize() is called BEFORE
+        // navigating so kioskMerchantId is set correctly — Get.arguments
+        // can't be relied on here since the KioskIdleScreen route hasn't
+        // been pushed yet at the time Get.put() runs.
+        final kiosk = Get.put(KioskController(), permanent: true);
+        kiosk.initialize(
+          merchantId: userData['id']?.toString() ?? '',
+          merchantName: userData['name']?.toString() ?? '',
+          cameFromMerchantApp: false,
+        );
+        Get.offAll(() => const KioskIdleScreen());
       } else if (role == 'admin') {
         // Contoh persediaan masa depan jika ada role admin
         Get.snackbar("Akses Admin", "Halaman admin belum disediakan.");
@@ -68,7 +81,7 @@ class LoginController extends GetxController {
       Get.snackbar(
         "Log In Failed",
         "Email or Password is wrong.",
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.red[100],
         colorText: Colors.red[900],
       );
