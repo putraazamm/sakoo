@@ -22,12 +22,6 @@ class MerchantMenuController extends GetxController {
   void onInit() {
     super.onInit();
 
-    // IndexedStack builds every tab immediately, so this controller may be
-    // created before MerchantDashboardController has finished populating
-    // merchantData (e.g. session restored from disk on app relaunch,
-    // instead of arriving fresh from the login screen). Try immediately,
-    // and also react to merchantData arriving later — otherwise this
-    // controller can be permanently stuck reading a null merchantId.
     final dashboard = Get.find<MerchantDashboardController>();
     _tryFetch(dashboard);
     ever(dashboard.merchantData, (_) => _tryFetch(dashboard));
@@ -40,9 +34,6 @@ class MerchantMenuController extends GetxController {
     fetchMenuItems();
   }
 
-  /// Fetches ALL items for this merchant (available and unavailable),
-  /// so the merchant can see and manage everything they've listed —
-  /// unlike the kiosk/order screens which only show isavailable = true.
   Future<void> fetchMenuItems() async {
     try {
       isLoading.value = true;

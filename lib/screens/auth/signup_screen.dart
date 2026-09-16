@@ -33,7 +33,6 @@ class SignUpScreen extends StatelessWidget {
               children: [
                 const SizedBox(height: 20),
                 
-                // Tajuk Utama Skrin
                 const Text(
                   "Create Account",
                   style: TextStyle(
@@ -54,7 +53,6 @@ class SignUpScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 32),
 
-                // Medan Input: Nama Penuh
                 _buildTextField(
                   label: "Full Name",
                   hint: "Enter your full name",
@@ -64,7 +62,6 @@ class SignUpScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
 
-                // Medan Input: Emel
                 _buildTextField(
                   label: "Email Address",
                   hint: "example@email.com",
@@ -75,7 +72,6 @@ class SignUpScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
 
-                // Medan Input: Kata Laluan
                 Obx(() => _buildTextField(
                   label: "Password",
                   hint: "Minimum 6 characters",
@@ -93,7 +89,6 @@ class SignUpScreen extends StatelessWidget {
                 )),
                 const SizedBox(height: 20),
 
-                // Medan Input: Sahkan Kata Laluan
                 Obx(() => _buildTextField(
                   label: "Confirm Password",
                   hint: "Repeat your password",
@@ -147,7 +142,6 @@ class SignUpScreen extends StatelessWidget {
                 
                 const SizedBox(height: 24),
 
-                // Pautan Footer ke Skrin Log Masuk
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -179,7 +173,6 @@ class SignUpScreen extends StatelessWidget {
     );
   }
 
-  // --- Fungsi Pembantu (Helper) untuk Widget Input ---
   Widget _buildTextField({
     required String label,
     required String hint,

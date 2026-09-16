@@ -23,10 +23,6 @@ class MerchantOrdersController extends GetxController {
   void onInit() {
     super.onInit();
 
-    // IndexedStack builds every tab immediately, so this can be created
-    // before merchantData is ready (e.g. session restored from disk
-    // instead of a fresh login). Try immediately, and also react to
-    // merchantData arriving later.
     final dashboard = Get.find<MerchantDashboardController>();
     _tryInit(dashboard);
     ever(dashboard.merchantData, (_) => _tryInit(dashboard));

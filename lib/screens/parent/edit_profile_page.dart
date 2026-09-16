@@ -26,12 +26,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    // READ: Isi data sedia ada ke dalam text field dari controller
     nameController = TextEditingController(text: controller.parentData['name']);
     emailController = TextEditingController(
       text: controller.parentData['email'],
     );
-    passwordController = TextEditingController(); // Biar kosong untuk security
+    passwordController = TextEditingController(); 
   }
 
   @override
@@ -42,7 +41,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     super.dispose();
   }
 
-  // UPDATE: Fungsi untuk simpan perubahan ke Supabase
   Future<void> _updateProfile() async {
     final parentId = controller.parentData['id'];
 
@@ -62,21 +60,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
     });
 
     try {
-      // Sediakan data untuk dikemas kini
       Map<String, dynamic> updateData = {
         'name': nameController.text.trim(),
         'email': emailController.text.trim(),
       };
 
-      // Jika user masukkan password baru, tambah dalam senarai update
       if (passwordController.text.trim().isNotEmpty) {
         updateData['password'] = passwordController.text.trim();
       }
 
-      // Hantar arahan UPDATE ke table 'user'
       await _supabase.from('user').update(updateData).eq('id', parentId);
 
-      // Kemas kini state tempatan (controller) supaya UI lain (seperti header) turut berubah
       controller.parentData['name'] = updateData['name'];
       controller.parentData['email'] = updateData['email'];
       controller.parentName.value = updateData['name'];

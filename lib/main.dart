@@ -9,7 +9,6 @@ import 'screens/parent/parent_main_shell.dart';
 import 'screens/merchant/merchant_main_shell.dart';
 
 void main() async {
-  // ✅ preserve() FIRST before anything else — keeps splash visible
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
@@ -20,8 +19,6 @@ void main() async {
 
   final savedSession = await SessionService.loadSession();
 
-  // ✅ remove() AFTER all async work is done — splash disappears exactly here
-  // and the correct screen (shell or welcome) is shown immediately, no flash
   FlutterNativeSplash.remove();
 
   runApp(SakooApp(initialSession: savedSession));

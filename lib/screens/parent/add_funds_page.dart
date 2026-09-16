@@ -23,9 +23,7 @@ class _AddFundsPageState extends State<AddFundsPage> {
     super.dispose();
   }
 
-  // Fungsi baru untuk format input gaya ATM (kanan ke kiri)
   void _formatInput(String value) {
-    // 1. Buang semua karakter yang bukan nombor
     String cleanText = value.replaceAll(RegExp(r'[^0-9]'), '');
 
     if (cleanText.isEmpty) {
@@ -33,13 +31,10 @@ class _AddFundsPageState extends State<AddFundsPage> {
       return;
     }
 
-    // 2. Bahagi dengan 100 untuk dapatkan nilai sen dan perpuluhan yang betul
     double parsedValue = double.parse(cleanText) / 100;
 
-    // 3. Format semula jadi 2 tempat perpuluhan (contoh: 1.23)
     String formattedText = parsedValue.toStringAsFixed(2);
 
-    // 4. Update controller dan letak cursor dekat hujung sekali
     _amountController.value = TextEditingValue(
       text: formattedText,
       selection: TextSelection.collapsed(offset: formattedText.length),

@@ -1,11 +1,10 @@
-// lib/controllers/kiosk_controller.dart
+// -> lib/controllers/kiosk_controller.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
 import 'package:lottie/lottie.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../screens/kiosk/kiosk_menu_screen.dart';
-import '../screens/kiosk/kiosk_idle_screen.dart';
 import '../screens/welcome_screen.dart';
 import '../services/session_service.dart';
 
@@ -37,9 +36,7 @@ class KioskController extends GetxController {
   var lang         = 'en'.obs; // 'en' | 'ms'
 
   // True when a merchant opened Kiosk mode from inside their own app
-  // (Settings > Enter Kiosk Mode). False for a dedicated kiosk device
-  // that logged in directly with role == 'kiosk'. Changes what the
-  // top-right button does on the idle screen (Exit vs Log Out).
+  // (Settings > Enter Kiosk Mode).
   var enteredFromMerchantApp = false.obs;
 
   // ── Realtime ─────────────────────────────────────────────────
@@ -48,15 +45,8 @@ class KioskController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Intentionally does NOT read Get.arguments here — this controller can
-    // be created via Get.put() *before* the target route's arguments exist
-    // (e.g. in login_controller.dart, Get.put() runs before Get.offAll()),
-    // which would read stale/empty arguments. Callers must explicitly call
-    // initialize(...) right after Get.put()/Get.find() instead.
   }
 
-  /// Call this immediately after Get.put()/Get.find() and before
-  /// navigating to the kiosk screens.
   void initialize({
     required String merchantId,
     required String merchantName,
@@ -95,10 +85,7 @@ class KioskController extends GetxController {
       isLoadingMenu.value = false;
     }
   }
-
-  // Listens for any insert/update/delete on this merchant's items and
-  // refetches automatically — so add/edit/remove on the merchant side
-  // shows up on the kiosk without needing a restart.
+  
   void _subscribeToMenuChanges() {
     if (kioskMerchantId.isEmpty) return;
     _itemChannel = _supabase
@@ -323,12 +310,6 @@ class KioskController extends GetxController {
         }
       }
 
-      // Category of the first item in the cart — used for the daily-limit
-      // exclusion check and shown on the merchant's order card. Also
-      // required so the RPC resolves to the correct 5-argument overload
-      // of process_nfc_payment (the old 4-arg one is now dropped in SQL,
-      // but keep this in place regardless — it was silently picking the
-      // stale overload before, which is why orders always showed 'completed').
       final category = firstCategory ?? 'Food & Drink';
 
       final dynamic resp = await _supabase.rpc(
@@ -423,13 +404,6 @@ class KioskController extends GetxController {
     // Auto-return to idle after 3 seconds
     Future.delayed(const Duration(seconds: 3), () {
       _reset();
-      // Get.close(2) closes the success dialog AND pops KioskMenuScreen
-      // back to KioskIdleScreen in one atomic call. This used to be
-      // `Get.back()` (dialog) then `Get.offAll(() => KioskIdleScreen())`,
-      // but offAll wiped the ENTIRE navigation stack — including the
-      // merchant app screens underneath, when kiosk mode was entered via
-      // Settings > Kiosk Mode — leaving nothing for "Exit Kiosk Mode" to
-      // pop back to (hence the black screen after finishing an order).
       Get.close(2);
     });
   }
@@ -450,20 +424,9 @@ class KioskController extends GetxController {
   Future<void> logout() async {
     await SessionService.clearSession();
     Get.offAll(() => const WelcomeScreen());
-    // This controller was registered with `permanent: true`, so it must
-    // be explicitly deleted here — otherwise the next kiosk login's
-    // Get.put() would just reuse this stale instance (old kioskMerchantId,
-    // old menuItems, old realtime subscription) instead of creating a
-    // fresh one. Deletion triggers onClose(), which unsubscribes the
-    // realtime channel automatically.
     Get.delete<KioskController>(force: true);
   }
 
-  // ── Exit Kiosk Mode (merchant just steps back into their own app —
-  //    the merchant's login session is left untouched). Navigation is
-  //    handled by the caller via Get.close(2) so the dialog pop and the
-  //    screen pop happen atomically — calling Get.back() twice in a row
-  //    here caused the second pop to sometimes get silently dropped.
   void exitKioskMode() {
     Get.delete<KioskController>(force: true);
   }

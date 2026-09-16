@@ -15,12 +15,11 @@ class SignUpController extends GetxController {
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
 
-  // Observers untuk state UI
+  // Observers for UI state
   var isLoading = false.obs;
   var obscurePassword = true.obs;
   var obscureConfirmPassword = true.obs;
 
-  // --- Fungsi Validasi ---
   String? validateName(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Please input your full name';
@@ -65,11 +64,11 @@ class SignUpController extends GetxController {
     try {
       isLoading.value = true;
 
-      await _supabase.from('user').insert({
-        'name': nameController.text.trim(),
-        'email': emailController.text.trim(),
-        'password': passwordController.text.trim(),
-        'role': 'parent',
+      await _supabase.rpc('register_user', params: {
+        'p_name': nameController.text.trim(),
+        'p_email': emailController.text.trim(),
+        'p_password': passwordController.text.trim(),
+        'p_role': 'parent',
       });
 
       Get.snackbar(
@@ -80,7 +79,6 @@ class SignUpController extends GetxController {
         colorText: Colors.white,
       );
 
-      // Bersihkan borang & bawa pengguna ke skrin Login
       clearControllers();
       Get.offAll(() => LoginScreen());
     } catch (e) {

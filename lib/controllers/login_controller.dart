@@ -1,3 +1,5 @@
+// -> lib/controllers/login_controller.dart
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -30,12 +32,16 @@ class LoginController extends GetxController {
     try {
       isLoading.value = true;
 
-      final userData = await _supabase
-          .from('user')
-          .select()
-          .eq('email', email.trim())
-          .eq('password', password.trim())
-          .single();
+      final List<dynamic> rows = await _supabase.rpc('verify_login', params: {
+        'p_email': email.trim(),
+        'p_password': password.trim(),
+      });
+
+      if (rows.isEmpty) {
+        throw Exception('Invalid email or password.');
+      }
+
+      final userData = Map<String, dynamic>.from(rows.first);
 
       // save session to disk
       await SessionService.saveSession(Map<String, dynamic>.from(userData));
@@ -53,17 +59,10 @@ class LoginController extends GetxController {
       );
 
       if (role == 'parent') {
-        // Hantar data user ke Parent Dashboard jika peranan adalah parent
         Get.offAll(() => const ParentMainShell(), arguments: userData);
       } else if (role == 'merchant') {
-        // Hantar ke Merchant Dashboard jika peranan adalah merchant
         Get.offAll(() => const MerchantMainShell(), arguments: userData);
       } else if (role == 'kiosk') {
-        // Dedicated kiosk device logging in directly (not via a merchant's
-        // own Settings > Enter Kiosk Mode). initialize() is called BEFORE
-        // navigating so kioskMerchantId is set correctly — Get.arguments
-        // can't be relied on here since the KioskIdleScreen route hasn't
-        // been pushed yet at the time Get.put() runs.
         final kiosk = Get.put(KioskController(), permanent: true);
         kiosk.initialize(
           merchantId: userData['id']?.toString() ?? '',
@@ -72,7 +71,6 @@ class LoginController extends GetxController {
         );
         Get.offAll(() => const KioskIdleScreen());
       } else if (role == 'admin') {
-        // Contoh persediaan masa depan jika ada role admin
         Get.snackbar("Akses Admin", "Halaman admin belum disediakan.");
       } else {
         Get.snackbar("Ralat", "Peranan pengguna tidak dikenali.");

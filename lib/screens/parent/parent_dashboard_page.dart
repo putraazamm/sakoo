@@ -11,7 +11,6 @@ class ParentDashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Memastikan controller di-inject awal
     final ParentDashboardController controller = Get.find<ParentDashboardController>();
 
     return Scaffold(
@@ -23,7 +22,7 @@ class ParentDashboardPage extends StatelessWidget {
               onRefresh: () => controller.fetchDashboardData(),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 100), // Padding bawah lebih untuk floating nav bar
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 100), 
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

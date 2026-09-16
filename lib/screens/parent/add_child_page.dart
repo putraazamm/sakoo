@@ -7,7 +7,6 @@ class AddChildPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Menghubungkan halaman dengan controller dashboard utama
     final ParentDashboardController controller =
         Get.find<ParentDashboardController>();
 
@@ -151,7 +150,6 @@ class AddChildPage extends StatelessWidget {
     );
   }
 
-  // Widget Pembantu untuk reka bentuk TextField yang konsisten
   Widget _buildTextField({
     required String label,
     required String hint,

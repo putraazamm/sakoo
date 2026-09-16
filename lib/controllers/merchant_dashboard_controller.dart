@@ -86,13 +86,11 @@ class MerchantDashboardController extends GetxController {
 
   Future<void> fetchTransactions(String merchantId) async {
     try {
-      // Ditambah .order() supaya transaksi terbaharu sentiasa duduk di atas
       var query = _supabase
           .from('transaction')
-          .select('*, child(childName)') // Hubungan join ke table child
+          .select('*, child(childName)') 
           .eq('merchantId', merchantId);
 
-      // Jika user memilih tanggal, saring datanya dengan tepat mengikut zon masa UTC
       if (selectedDate.value != null) {
         final startOfDayLocal = DateTime(
           selectedDate.value!.year,
@@ -114,12 +112,12 @@ class MerchantDashboardController extends GetxController {
     }
   }
 
-  // --- Fungsi Memilih Tanggal Filter ---
+  // --- Date Filter Function ---
   Future<void> pickDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: selectedDate.value ?? DateTime.now(),
-      firstDate: DateTime(2024), // Disesuaikan ke tahun sistem mula berjalan
+      firstDate: DateTime(2024), // Set the first date to a reasonable past date 
       lastDate: DateTime.now(),
       builder: (context, child) {
         return Theme(
@@ -137,14 +135,14 @@ class MerchantDashboardController extends GetxController {
 
     if (picked != null) {
       selectedDate.value = picked;
-      // Muat ulang transaksi dengan filter tanggal yang baru
+      // update the transaction list based on the selected date
       if (merchantData['id'] != null) {
         fetchTransactions(merchantData['id']);
       }
     }
   }
 
-  // --- Fungsi Reset Filter Tanggal ---
+  // --- Date Filter ---
   void clearDateFilter() {
     selectedDate.value = null;
     if (merchantData['id'] != null) {
@@ -152,7 +150,7 @@ class MerchantDashboardController extends GetxController {
     }
   }
 
-  // --- Fungsi Keluar (Logout) ---
+  // --- (Logout) ---
   void logout() async {
     await SessionService.clearSession();
     merchantData.clear();

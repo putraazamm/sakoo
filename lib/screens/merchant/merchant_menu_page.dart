@@ -208,8 +208,6 @@ class MerchantMenuPage extends StatelessWidget {
     );
   }
 
-  /// Shared dialog for both adding a new item and editing an existing one.
-  /// Pass `existingItem` to pre-fill fields and switch into edit mode.
   void _showItemDialog(
     BuildContext context,
     MerchantMenuController controller, {

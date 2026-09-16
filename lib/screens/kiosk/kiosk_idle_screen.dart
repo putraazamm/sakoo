@@ -170,7 +170,7 @@ class KioskIdleScreen extends StatelessWidget {
                   ),
                 ),
 
-                // ── Language toggle ─────────────────────────────────
+                // ── Language toggle (Bahasa Malaysia | English )
                 Obx(() => Padding(
                       padding: const EdgeInsets.only(bottom: 32),
                       child: Row(
@@ -201,7 +201,7 @@ class KioskIdleScreen extends StatelessWidget {
               ],
             ),
 
-            // ── Merchant name (top left) ──────────────────────────
+            // ── Merchant name (top left) 
             Positioned(
               top: 12,
               left: 16,
@@ -215,7 +215,7 @@ class KioskIdleScreen extends StatelessWidget {
                   )),
             ),
 
-            // ── Exit Kiosk Mode / Log Out button (top right) ──────
+            // ── Exit Kiosk Mode (top right) 
             Positioned(
               top: 8,
               right: 8,
@@ -245,7 +245,6 @@ class KioskIdleScreen extends StatelessWidget {
   }
 }
 
-// ── Kiosk illustration (inline SVG-like drawn with Flutter widgets) ──
 class _KioskIllustration extends StatelessWidget {
   @override
   Widget build(BuildContext context) {

@@ -1,6 +1,4 @@
-// lib/controllers/child_detail_controller.dart
-
-// import 'dart:io';
+// -> lib/controllers/child_detail_controller.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
@@ -24,17 +22,13 @@ class ChildDetailController extends GetxController {
   var deactivationSlidesRemaining = 3.obs;
   var isDeactivatedMode = false.obs;
 
-  // --- Edit sheet: Scheduled Auto Top-Up draft state (only used while the
-  // edit bottom sheet is open; committed to Supabase on Save) ---
   var editAutoTopUpEnabled = false.obs;
   var editAutoTopUpFrequency = 'weekly'.obs; // 'daily' | 'weekly' | 'monthly'
-  var editAutoTopUpDay = 1.obs; // ISO weekday (1-7) or day-of-month (1-28)
+  var editAutoTopUpDay = 1.obs; 
 
-  // --- Transaction / Weekly Summary state ---
   var isLoadingTransactions = true.obs;
   var childTransactions = <TransactionModel>[].obs;
 
-  // Weekly summary: list of 7 days (oldest -> newest), each with topUp/spend/withdraw totals
   var weeklySummary = <Map<String, dynamic>>[].obs;
 
   @override
@@ -45,7 +39,6 @@ class ChildDetailController extends GetxController {
     fetchGoals();
   }
 
-  // Fetch all transactions belonging to this child (top-ups, withdrawals, purchases)
   Future<void> fetchChildTransactions() async {
     final child = childData.value;
     if (child == null) return;
@@ -77,7 +70,6 @@ class ChildDetailController extends GetxController {
     }
   }
 
-  // Build a 7-day rolling summary (oldest day first) from childTransactions.
   void _buildWeeklySummary() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -117,7 +109,6 @@ class ChildDetailController extends GetxController {
     weeklySummary.assignAll(summary);
   }
 
-  // Totals across the visible 7-day window, used for the summary header.
   double get weeklyTotalSpend => weeklySummary.fold<double>(
     0.0,
     (sum, day) => sum + (day['spend'] as double),
@@ -186,7 +177,7 @@ class ChildDetailController extends GetxController {
       });
 
       await fetchGoals();
-      Get.back(); // close the "New Goal" dialog
+      Get.back(); 
       Get.snackbar(
         "Goal Added!",
         "\"${title.trim()}\" is ready for ${child.childNickname.isNotEmpty ? child.childNickname : child.childName} to save towards.",
@@ -197,7 +188,6 @@ class ChildDetailController extends GetxController {
     }
   }
 
-  // Moves money from the child's spendable card balance into a goal.
   Future<void> contributeToGoal(String goalId, double amount) async {
     final child = childData.value;
     if (child == null) return;
@@ -219,7 +209,7 @@ class ChildDetailController extends GetxController {
       final message = result['message']?.toString() ?? '';
 
       if (success) {
-        Get.back(); // close the "Contribute" dialog
+        Get.back(); 
         await fetchGoals();
         await _refreshChildBalance();
         Get.snackbar("Saved!", message, backgroundColor: Colors.green.withOpacity(0.1));
@@ -231,8 +221,6 @@ class ChildDetailController extends GetxController {
     }
   }
 
-  // Moves the saved amount back to the child's spendable card balance,
-  // e.g. once a goal is reached and they're ready to buy the item.
   Future<void> cashOutGoal(String goalId) async {
     final child = childData.value;
     if (child == null) return;
@@ -259,8 +247,6 @@ class ChildDetailController extends GetxController {
     }
   }
 
-  // A goal can only be deleted once its saved amount has been cashed out —
-  // otherwise the money would just vanish from the child's total.
   Future<void> deleteGoal(String goalId, double collectedAmount) async {
     if (collectedAmount > 0) {
       Get.snackbar(
@@ -292,7 +278,6 @@ class ChildDetailController extends GetxController {
         childBalance: (row['childBalance'] ?? 0.0).toDouble(),
       );
     } catch (_) {
-      // non-fatal — balance will just be stale until the next full refresh
     }
   }
   // Saving Goals State --- ends
@@ -311,15 +296,12 @@ class ChildDetailController extends GetxController {
 
       isScanning.value = true;
 
-      // 2. Mula sesi imbasan (Sangat ringkas berbanding nfc_manager)
       NFCTag tag = await FlutterNfcKit.poll(
         timeout: const Duration(seconds: 15),
         iosAlertMessage:
             "Please tap your Sakoo NFC card at the back of your device.",
       );
 
-      // 3. Ekstrak UID (Unique ID) dari kad NFC
-      // flutter_nfc_kit akan terus berikan ID dalam format Hex String
       String newCardId = tag.id;
 
       if (newCardId.isEmpty) {
@@ -329,22 +311,19 @@ class ChildDetailController extends GetxController {
         return;
       }
 
-      // 4. Update nombor kad ke dalam database Supabase
       await _supabase
           .from('child')
           .update({
             'cardId': newCardId,
-            'isActive': true, // Auto aktif bila kad di-link
+            'isActive': true, 
           })
           .eq('childId', childData.value!.childId);
 
-      // 5. Tutup sesi NFC dengan animasi berjaya (Khas untuk UI iOS)
       await FlutterNfcKit.finish(
         iosAlertMessage: "Sakoo card is successfully linked!",
       );
       isScanning.value = false;
 
-      // 6. Kemas kini State UI & Refresh Dashboard
       var updatedChild = childData.value!;
 
       Get.find<ParentDashboardController>().fetchDashboardData();
@@ -364,7 +343,6 @@ class ChildDetailController extends GetxController {
       await FlutterNfcKit.finish(iosErrorMessage: "Error while scanning.");
       isScanning.value = false;
 
-      // Abaikan ralat jika pengguna tekan butang 'Cancel' masa scan
       if (e.toString().contains('408') || e.toString().contains('cancelled')) {
         Get.snackbar('Cancelled', 'Scanning session is cancelled.');
       } else {
@@ -478,9 +456,7 @@ class ChildDetailController extends GetxController {
     );
   }
 
-  // After a top-up/withdraw goes through, sync this page's local childData
-  // (balance) with the freshly fetched list from ParentDashboardController,
-  // then reload this child's transaction history + weekly summary.
+  
   void refreshChildAndTransactions() {
     final parentController = Get.find<ParentDashboardController>();
     final currentChild = childData.value;
@@ -495,12 +471,10 @@ class ChildDetailController extends GetxController {
     fetchChildTransactions();
   }
 
-  // modal to edit child information
   void showEditChildSheet(BuildContext context, ChildModel child) {
     deactivationSlidesRemaining.value = 3;
     isDeactivatedMode.value = false;
 
-    // seed the draft auto top-up state from the current child record
     editAutoTopUpEnabled.value = child.autoTopUpEnabled;
     editAutoTopUpFrequency.value = child.autoTopUpFrequency;
     editAutoTopUpDay.value = child.autoTopUpDay;
@@ -511,8 +485,6 @@ class ChildDetailController extends GetxController {
     );
   }
 
-  // Persist nickname, daily limit, and auto top-up schedule in one go.
-  // Called by EditChildSheet's Save Changes button.
   Future<void> saveChildEdits({
     required String newNickname,
     required double newDailyLimit,
@@ -565,16 +537,11 @@ class ChildDetailController extends GetxController {
     }
   }
 
-  // The Card Status slider (activate/deactivate) stays driven from the
-  // controller since it already depends on controller-level Rx state shared
-  // with showEditChildSheet's draft fields.
   Widget buildCardStatusSlider(ChildModel child) {
     return Column(
       children: [
         // slider deactivation (3 times slide)
-        // 🚀 SLIDER ACTIVATE / DEACTIVATE
         Obx(() {
-          // Dapatkan status terkini dari childData.value
           bool isCardActive = childData.value?.isActive ?? false;
           int slides = deactivationSlidesRemaining.value;
           bool isSliderMode = isDeactivatedMode.value;
@@ -585,7 +552,6 @@ class ChildDetailController extends GetxController {
               return FadeTransition(opacity: animation, child: child);
             },
             child: !isSliderMode
-                // 1. PAPARAN ASAL: BUTANG
                 ? SizedBox(
                     key: const ValueKey('action_button'),
                     width: double.infinity,
@@ -599,7 +565,6 @@ class ChildDetailController extends GetxController {
                             : 1;
                       },
                       style: ElevatedButton.styleFrom(
-                        // Merah untuk Deactivate, Hijau untuk Activate
                         backgroundColor: isCardActive
                             ? Colors.redAccent
                             : Colors.green,
@@ -619,7 +584,6 @@ class ChildDetailController extends GetxController {
                       ),
                     ),
                   )
-                // 2. PAPARAN SLIDER
                 : ActionSlider.standard(
                     key: ValueKey('action_slider_$isCardActive'),
                     width: double.infinity,
@@ -653,33 +617,28 @@ class ChildDetailController extends GetxController {
                       controller.loading();
                       await Future.delayed(const Duration(milliseconds: 300));
 
-                      // Logik: Kalau Deactivate & belum cukup 3 kali slide
                       if (isCardActive && slides > 1) {
-                        controller.reset(); // Biar slider gerak balik kiri DULU
+                        controller.reset(); 
                         await Future.delayed(
                           const Duration(milliseconds: 400),
-                        ); // Tunggu animasi selesai
-                        deactivationSlidesRemaining.value -=
-                            1; // BARU update UI state
+                        ); 
+                        deactivationSlidesRemaining.value -= 1;
                       }
-                      // Logik: Cukup 3 kali Deactivate ATAU 1 kali Activate
                       else {
                         controller.success();
 
                         try {
                           bool newStatus =
-                              !isCardActive; // Terbalikkan status (true -> false, false -> true)
+                              !isCardActive; 
 
-                          // Update di Supabase
                           await _supabase
                               .from('child')
                               .update({'isActive': newStatus})
                               .eq('childId', child.childId);
 
-                          // Update State Tempatan
                           var updatedChild = childData.value!;
                           childData.value = updatedChild.copyWith(
-                            isActive: newStatus, // Status baru
+                            isActive: newStatus, 
                           );
 
                           Get.find<ParentDashboardController>()
@@ -687,10 +646,9 @@ class ChildDetailController extends GetxController {
 
                           await Future.delayed(
                             const Duration(milliseconds: 500),
-                          ); // Biar tengok success hijau/merah
+                          ); 
                           Get.back();
 
-                          // Tunjuk mesej berbeza ikut status
                           Get.snackbar(
                             newStatus ? "Card Activated" : "Card Deactivated",
                             newStatus
@@ -704,7 +662,6 @@ class ChildDetailController extends GetxController {
                           );
                         } catch (e) {
                           controller.reset();
-                          // Reset bilangan slide kalau gagal
                           deactivationSlidesRemaining.value = isCardActive
                               ? 3
                               : 1;
@@ -720,7 +677,6 @@ class ChildDetailController extends GetxController {
           );
         }),
 
-        // Butang Cancel Deactivation / Activation
         Obx(
           () => isDeactivatedMode.value
               ? Column(
@@ -768,7 +724,6 @@ class ChildDetailController extends GetxController {
 
   @override
   void onClose() {
-    // Langkah keselamatan: Tutup sesi NFC jika user terus back keluar dari page
     FlutterNfcKit.finish();
     super.onClose();
   }

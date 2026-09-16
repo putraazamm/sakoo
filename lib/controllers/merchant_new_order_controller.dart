@@ -1,3 +1,4 @@
+// lib/controllers/merchant_new_order_controller.dart
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'merchant_dashboard_controller.dart';
@@ -100,7 +101,7 @@ class MerchantNewOrderController extends GetxController {
     return total;
   }
 
-  // Fungsi Tambah (+)
+  // Increment (+)
   void increment(String id) {
     final item = menuItems.firstWhereOrNull((e) => e['id'] == id);
     if (item == null) return;
@@ -119,7 +120,7 @@ class MerchantNewOrderController extends GetxController {
     cart[id] = currentQty + 1;
   }
 
-  // Fungsi Tolak (-)
+  // Decrement (-)
   void decrement(String id) {
     final currentQty = cart[id] ?? 0;
     if (currentQty > 0) {
@@ -131,7 +132,6 @@ class MerchantNewOrderController extends GetxController {
     cart.clear();
   }
 
-  // Fungsi apabila butang 'Next >' ditekan
   void proceedToPayment() {
     if (totalPrice == 0) {
       Get.snackbar("No order", "Please at least add one item.");

@@ -57,7 +57,6 @@ class MerchantNewOrderScreen extends StatelessWidget {
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
-                                  // Balance Merchant dari Dashboard Controller
                                   Obx(
                                     () => Text(
                                       dashboardController.merchantBalance.value
@@ -197,7 +196,6 @@ class MerchantNewOrderScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    // Total Price yang dikira secara automatik
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16.0, right: 8.0),
                       child: Obx(
@@ -243,7 +241,6 @@ class MerchantNewOrderScreen extends StatelessWidget {
                           child: SizedBox(
                             height: 55,
                             child: Obx(() {
-                              // Butang 'Next' akan gelap jika ada pesanan, dan kelabu jika kosong
                               final isCartReady =
                                   orderController.totalPrice > 0;
                               return ElevatedButton(
@@ -333,7 +330,7 @@ class MerchantNewOrderScreen extends StatelessWidget {
             ],
           ),
 
-          // Butang Kuantiti (+ / -)
+          // Quantity Button (+ / -)
           Container(
             decoration: BoxDecoration(
               color: const Color(0xFF4A4A4A),
@@ -351,7 +348,6 @@ class MerchantNewOrderScreen extends StatelessWidget {
                   onPressed: () => controller.decrement(id),
                 ),
                 Obx(() {
-                  // Dengar perubahan pada nilai kuantiti di dalam cart
                   int qty = controller.cart[id] ?? 0;
                   return Text(
                     qty.toString(),

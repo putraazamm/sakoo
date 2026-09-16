@@ -1,22 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
-// import 'package:get/get_connect/http/src/http/io/http_request_io.dart';
 import 'package:lottie/lottie.dart';
 import 'package:sakoo/controllers/merchant_dashboard_controller.dart';
 import 'package:sakoo/controllers/merchant_new_order_controller.dart';
-// import 'package:sakoo/models/models.dart';
-// import 'package:sakoo/screens/merchant/merchant_main_shell.dart';
 import 'package:sakoo/screens/merchant/merchant_new_order_page.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'; // Tambah import Supabase
-// import 'merchant_dashboard_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; 
 
 class MerchantCheckoutScreen extends StatelessWidget {
   const MerchantCheckoutScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Ambil data yang di-pass dari skrin sebelumnya
     final Map<String, dynamic> args = Get.arguments;
     final List<Map<String, dynamic>> items = args['items'];
     final double totalAmount = args['total'];
@@ -71,11 +66,9 @@ class MerchantCheckoutScreen extends StatelessWidget {
                 ),
               ),
 
-              // Garis Pemisah
               const Divider(thickness: 1.5),
               const SizedBox(height: 16),
 
-              // Jumlah Keseluruhan
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -95,7 +88,6 @@ class MerchantCheckoutScreen extends StatelessWidget {
               ),
               const SizedBox(height: 40),
 
-              // Butang Pay (Aktifkan NFC)
               SizedBox(
                 width: double.infinity,
                 height: 60,
@@ -130,13 +122,11 @@ class MerchantCheckoutScreen extends StatelessWidget {
     );
   }
 
-  // Logik Sebenar Imbasan NFC Kit
   Future<void> _startNFCSession(
     BuildContext context,
     double totalAmount,
     List<Map<String, dynamic>> items,
   ) async {
-    // Semak ketersediaan hardware NFC pada peranti merchant
     var nfcAvailability = await FlutterNfcKit.nfcAvailability;
     if (nfcAvailability != NFCAvailability.available) {
       Get.snackbar(
@@ -148,7 +138,6 @@ class MerchantCheckoutScreen extends StatelessWidget {
       return;
     }
 
-    // Papar dialog mengundi / menunggu imbasan (const dibuang dari AlertDialog)
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -176,27 +165,22 @@ class MerchantCheckoutScreen extends StatelessWidget {
     );
 
     try {
-      // Mulakan imbasan kad NFC dengan had masa (timeout) 15 saat
       var tag = await FlutterNfcKit.poll(
         timeout: const Duration(seconds: 15),
         iosMultipleTagMessage: "Multiple tags found!",
         iosAlertMessage: "Scan your student card",
       );
 
-      String cardUid = tag.id; // Dapatkan Unique ID kad
+      String cardUid = tag.id; 
 
-      // Matikan sesi hardware NFC sebaik sahaja dapat ID
       await FlutterNfcKit.finish();
 
-      // Hantar UID ke Supabase RPC untuk pemprosesan baki kewangan
       if (context.mounted) {
         await _executePaymentOnDatabase(context, cardUid, totalAmount, items);
       }
     } catch (e) {
-      // Jika error, panggil finish untuk tamatkan polling
       await FlutterNfcKit.finish();
 
-      // Tutup dialog Lottie
       if (context.mounted) Navigator.of(context).pop();
 
       Get.snackbar(
@@ -248,7 +232,6 @@ class MerchantCheckoutScreen extends StatelessWidget {
       debugPrint("Amount : $amount");
       debugPrint("Items : $cleanItems");
 
-      // Panggil fungsi database 'process_nfc_payment' yang dicipta dalam SQL editor
       final response = await supabase.rpc(
         'process_nfc_payment',
         params: {
@@ -325,7 +308,6 @@ class MerchantCheckoutScreen extends StatelessWidget {
           duration: const Duration(seconds: 4),
         );
 
-        // Seterusnya kau boleh clearkan cart atau hantar merchant balik ke Dashboard:
         Get.offAll(() => const MerchantNewOrderScreen());
 
       } else {
@@ -337,7 +319,7 @@ class MerchantCheckoutScreen extends StatelessWidget {
         );
       }
     } catch (error, stackTrace) {
-      if (context.mounted) Navigator.of(context).pop(); // Tutup dialog scan
+      if (context.mounted) Navigator.of(context).pop(); 
 
       debugPrint("=== Supabase RPC Error ===");
       debugPrint("Error : $error");

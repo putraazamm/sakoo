@@ -16,11 +16,9 @@ class MerchantDashboardScreen extends StatelessWidget {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            // Sini sistem akan panggil balik data terbaru dari Supabase bila ditarik
             await controller.fetchDashboardData();
           },
           child: SingleChildScrollView(
-            // WAJIB LETAK NI: Supaya skrin sentiasa boleh ditarik walaupun content pendek
             physics: const AlwaysScrollableScrollPhysics(),
             child: Padding(
               padding: const EdgeInsets.all(20.0),
@@ -121,7 +119,7 @@ class MerchantDashboardScreen extends StatelessWidget {
                         ),
                       ),
 
-                      // 5. FILTER TARIKH (Guna Obx untuk tukar UI bila tarikh dipilih)
+                      
                       Obx(
                         () => GestureDetector(
                           onTap: () => controller.pickDate(context),
@@ -171,9 +169,9 @@ class MerchantDashboardScreen extends StatelessWidget {
                   const SizedBox(height: 16),
 
                   // -- Transaction List Area --
-                  // DIUBAH: Expanded dibuang supaya tidak crash dengan SingleChildScrollView
+                  
                   Obx(() {
-                    // Tunjuk loading spinner kalau data tengah diambil
+                    
                     if (controller.isLoading.value) {
                       return const Center(
                         child: Padding(
@@ -183,7 +181,7 @@ class MerchantDashboardScreen extends StatelessWidget {
                       );
                     }
 
-                    // Tunjuk empty state kalau tiada transaksi
+                    // Tunjuk empty state if no transaction happened yet 
                     if (controller.transactions.isEmpty) {
                       return Container(
                         width: double.infinity,
@@ -201,12 +199,12 @@ class MerchantDashboardScreen extends StatelessWidget {
                       );
                     }
 
-                    // Tunjuk ListView kalau ada data transaksi
+                    
                     return ListView.builder(
                       shrinkWrap:
-                          true, // WAJIB letak jika ListView berada dalam Column/Scrollview
+                          true, 
                       physics:
-                          const NeverScrollableScrollPhysics(), // Matikan scroll ListView supaya dia ikut scroll bapa dia (SingleChildScrollView)
+                          const NeverScrollableScrollPhysics(), 
                       itemCount: controller.transactions.length,
                       itemBuilder: (context, index) {
                         final tx = controller.transactions[index];
@@ -214,7 +212,6 @@ class MerchantDashboardScreen extends StatelessWidget {
                         final isWithdraw = tx['category'] == 'Withdrawal';
                         final amount = (tx['amount'] ?? 0).toStringAsFixed(2);
 
-                        // Ambil nama child dari relasi 'child' table (kalau wujud)
                         final childName = tx['child']?['childName'] ?? 'Child';
 
                         return ListTile(
@@ -382,7 +379,7 @@ class MerchantDashboardScreen extends StatelessWidget {
         ),
       ),
       isScrollControlled:
-          true, // Memastikan sheet ditolak naik jika keyboard muncul
+          true, 
     );
   }
 }

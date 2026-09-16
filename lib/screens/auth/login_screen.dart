@@ -77,7 +77,6 @@ class LoginScreen extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
-                // ✅ Password Textfield (Dah dibalut dengan Obx untuk fungsi mata)
                 Obx(
                   () => TextField(
                     controller: passwordController,
@@ -160,7 +159,7 @@ class LoginScreen extends StatelessWidget {
                 Center(
                   child: GestureDetector(
                     onTap: () {
-                      // Logik lupa password
+                      // todo: add forgot password functionality 
                     },
                     child: const Text(
                       'Forgot password?',
@@ -173,10 +172,8 @@ class LoginScreen extends StatelessWidget {
                   ),
                 ),
 
-                // Spacer menolak komponen ke bawah
                 const Spacer(),
 
-                // Bottom Text (Daftar Akaun)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

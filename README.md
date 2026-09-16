@@ -12,6 +12,7 @@ The application is built with a single Flutter codebase serving three roles:
 - **Merchant** — manages a menu, takes orders (in person or via a self-service kiosk), and tracks order status.
 - **Kiosk** — a self-service ordering screen for children, tied to a merchant's own menu and account.
 
+<<<<<<< HEAD
 ## Screenshots
 
 <!-- Replace the placeholder paths below with your own screenshots.
@@ -25,6 +26,10 @@ The application is built with a single Flutter codebase serving three roles:
 
 ## Tech Stack
 
+=======
+## Tech Stack
+
+>>>>>>> 6e665b41889f0fd0e2effabad7056993df575ba4
 - **Flutter** — cross-platform client (Android, iOS, Web)
 - **GetX** — state management, dependency injection, and navigation
 - **Supabase** — Postgres database, authentication data, Row Level Security, Realtime subscriptions, and RPC functions for atomic balance transfers
@@ -97,10 +102,13 @@ Sakoo uses Supabase (PostgreSQL) with the following core tables:
 
 Balance transfers (card top-ups, NFC payments, and goal contributions) are handled through Postgres RPC functions to keep each operation atomic. Realtime subscriptions are used to keep the kiosk menu and merchant order list in sync without manual refreshing.
 
+<<<<<<< HEAD
 Authentication is also handled through dedicated RPC functions rather than direct table queries, so password hashes are never read or written by the client directly:
 - `register_user` — creates an account with the password hashed using bcrypt (`pgcrypto`) before it is stored
 - `verify_login` — checks the submitted password against the stored hash inside the database and returns only non-sensitive account fields (no password/hash is ever returned to the client)
 
+=======
+>>>>>>> 6e665b41889f0fd0e2effabad7056993df575ba4
 ## Getting Started
 
 ### Prerequisites
@@ -132,10 +140,19 @@ Authentication is also handled through dedicated RPC functions rather than direc
 
 ## Known Limitations
 
+<<<<<<< HEAD
 - Login and registration still use a custom `user` table rather than Supabase Auth, so session handling (timeouts, refresh tokens, etc.) is managed manually via local session storage instead of Supabase's built-in auth session lifecycle. Passwords themselves are hashed with bcrypt and never handled in plaintext by the client (see Database section above).
 - Row Level Security policies on several tables are intentionally permissive during development (e.g. `USING (true)`) and should be tightened before production use — this includes restricting direct read access to the `user` table, which the authentication RPCs above no longer require.
+=======
+- Authentication currently uses a custom `user` table with plaintext-stored passwords rather than Supabase Auth.
+- Row Level Security policies on several tables are intentionally permissive during development and should be tightened before production use.
+>>>>>>> 6e665b41889f0fd0e2effabad7056993df575ba4
 - The admin role is defined in the schema but has no dedicated interface yet.
 
 ## License
 
+<<<<<<< HEAD
 No license has been specified for this project.
+=======
+No license has been specified for this project.
+>>>>>>> 6e665b41889f0fd0e2effabad7056993df575ba4
