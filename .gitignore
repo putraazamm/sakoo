@@ -46,4 +46,4 @@ app.*.map.json
 
 
 # repomix
-/repomix-output.xml
+repomix-output.xml
